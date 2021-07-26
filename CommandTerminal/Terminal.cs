@@ -68,25 +68,15 @@ namespace CommandTerminal
         Texture2D background_texture;
         Texture2D input_background_texture;
 
-        public static CommandLog Buffer { get; private set; }
-        public static CommandShell Shell { get; private set; }
-        public static CommandHistory History { get; private set; }
-        public static CommandAutocomplete Autocomplete { get; private set; }
+        public CommandLogger Logger { get; private set; }
+        public CommandShell Shell { get; private set; }
+        public CommandHistory History { get; private set; }
+        public CommandAutocomplete Autocomplete { get; private set; }
+        public bool IssuedError => Shell.Context.HasErrors;
 
-        public static bool IssuedError {
-            get { return Shell.IssuedErrorMessage != null; }
-        }
-
-        public bool IsClosed {
+        public bool IsClosed 
+        {
             get { return state == TerminalState.Close && Mathf.Approximately(current_open_t, open_target); }
-        }
-
-        public static void Log(string format, params object[] message) {
-            Log(TerminalLogType.ShellMessage, format, message);
-        }
-
-        public static void Log(TerminalLogType type, string format, params object[] message) {
-            Buffer.HandleLog(string.Format(format, message), type);
         }
 
         public void SetState(TerminalState new_state) {
@@ -132,7 +122,7 @@ namespace CommandTerminal
         }
 
         void OnEnable() {
-            Buffer = new CommandLog(BufferSize);
+            Logger = new CommandLogger(BufferSize);
             Shell = new CommandShell();
             History = new CommandHistory();
             Autocomplete = new CommandAutocomplete();
@@ -160,10 +150,6 @@ namespace CommandTerminal
             SetupLabels();
 
             Shell.RegisterCommands();
-
-            if (IssuedError) {
-                Log(TerminalLogType.Error, "Error: {0}", Shell.IssuedErrorMessage);
-            }
 
             foreach (var command in Shell.Commands) {
                 Autocomplete.Register(command.Key);
@@ -292,10 +278,12 @@ namespace CommandTerminal
             GUILayout.EndVertical();
         }
 
-        void DrawLogs() {
-            foreach (var log in Buffer.Logs) {
-                label_style.normal.textColor = GetLogColor(log.type);
-                GUILayout.Label(log.message, label_style);
+        void DrawLogs() 
+        {
+            foreach (var log in Logger) 
+            {
+                label_style.normal.textColor = GetLogColor(log.Type);
+                GUILayout.Label(log.String, label_style);
             }
         }
 
@@ -338,14 +326,9 @@ namespace CommandTerminal
         }
 
         void EnterCommand() {
-            Log(TerminalLogType.Input, "{0}", command_text);
-            Shell.RunCommand(command_text);
+            Logger.Log(command_text, LogTypes.Input);
+            Shell.TryRunCommand(command_text);
             History.Push(command_text);
-
-            if (IssuedError) {
-                Log(TerminalLogType.Error, "Error: {0}", Shell.IssuedErrorMessage);
-            }
-
             command_text = "";
             scroll_position.y = int.MaxValue;
         }
@@ -369,7 +352,7 @@ namespace CommandTerminal
                     log_buffer.Append(completion.PadRight(format_width + 4));
                 }
 
-                Log("{0}", log_buffer);
+                Logger.Log(log_buffer.ToString());
                 scroll_position.y = int.MaxValue;
             }
         }
@@ -382,18 +365,18 @@ namespace CommandTerminal
             editor_state.MoveCursorToPosition(new Vector2(999, 999));
         }
 
-        void HandleUnityLog(string message, string stack_trace, LogType type) {
-            Buffer.HandleLog(message, stack_trace, (TerminalLogType)type);
+        void HandleUnityLog(string message, string stack_trace, UnityEngine.LogType type) {
+            Logger.Log(message, stack_trace, (LogTypes)type);
             scroll_position.y = int.MaxValue;
         }
 
-        Color GetLogColor(TerminalLogType type) {
+        Color GetLogColor(LogTypes type) {
             switch (type) {
-                case TerminalLogType.Message: return ForegroundColor;
-                case TerminalLogType.Warning: return WarningColor;
-                case TerminalLogType.Input: return InputColor;
-                case TerminalLogType.ShellMessage: return ShellColor;
-                default: return ErrorColor;
+                case LogTypes.Message:      return ForegroundColor;
+                case LogTypes.Warning:      return WarningColor;
+                case LogTypes.Input:        return InputColor;
+                case LogTypes.ShellMessage: return ShellColor;
+                default:                    return ErrorColor;
             }
         }
     }
