@@ -1,91 +1,84 @@
-using System.Text;
 using System.Diagnostics;
-using UnityEngine;
+using CommandTerminal;
+using Kari;
 
-namespace CommandTerminal
+namespace SomeProject.CommandTerminalBasics
 {
     public static class BuiltinCommands
     {
-        [Command(Help = "Clear the command console")]
+        [FrontCommand(Help = "Clear the command console", NumberOfArguments = 0)]
         public static void Clear(CommandContext context) 
         {
             context.Logger.Clear();
         }
 
-#if DEBUG
-        [RegisterCommand(Help = "Output the stack trace of the previous message", MaxArgCount = 0)]
-        static void Trace(CommandArg[] args) 
+        [FrontCommand(Help = "List all variables or set a variable value", 
+            MinimumNumberOfArguments = 0, MaximumNumberOfArguments = 2)]
+        public static void Set(CommandContext context) 
         {
-            int log_count = Terminal.Logger.Logs.Count;
-
-            if (log_count - 2 < 0) 
+            if (context.Arguments.Count == 0)
             {
-                Terminal.Log("Nothing to trace.");
+                context.LogVariables();
                 return;
             }
 
-            var log_item = Terminal.Logger.Logs[log_count - 2];
-
-            if (log_item.StackTrace == "") 
+            var name = context.Arguments[0];
+            
+            if (context.Arguments.Count == 1)
             {
-                Terminal.Log("{0} (no trace)", log_item.Message);
-            } else {
-                Terminal.Log(log_item.StackTrace);
-            }
-        }
-#endif
-
-        [RegisterCommand(Help = "List all variables or set a variable value")]
-        static void Set(CommandArg[] args) 
-        {
-            if (args.Length == 0) 
-            {
-                foreach (var kv in Terminal.Shell.Variables) 
+                if (context.Variables.TryGetValue(name, out var varValue))
                 {
-                    Terminal.Log("{0}: {1}", kv.Key.PadRight(16), kv.Value);
+                    context.Log(context.Variables[name]);
+                }
+                else
+                {
+                    context.Log("");
                 }
                 return;
             }
 
-            string variable_name = args[0].String;
-
-            if (variable_name[0] == '$') 
-            {
-                Terminal.Log(LogTypes.Warning, "Warning: Variable name starts with '$', '${0}'.", variable_name);
-            }
-
-            Terminal.Shell.SetVariable(variable_name, JoinArguments(args, 1));
+            var value = context.Arguments[1];
+            context.Variables[name] = value;
         }
 
-        [RegisterCommand(Help = "No operation")]
-        static void Noop(CommandArg[] args) 
+        [FrontCommand(Help = "Logs help for a command",
+            MinimumNumberOfArguments = 0, MaximumNumberOfArguments = 1)]
+        public static void Help(CommandContext context)
+        {
+            if (context.Arguments.Count == 0)
+            {
+                context.Shell.LogCommands();
+                return;
+            }
+
+            var commandName = context.Arguments[0];
+            context.Shell.LogHelpForCommand(commandName);
+        }
+
+        [FrontCommand(Help = "Logs the time a command takes to execute", MinimumNumberOfArguments = 1)]
+        public static void Time(CommandContext context)
+        {
+            var commandName = context.Arguments[0];
+            context.Command = commandName;
+            context.Arguments.RemoveAt(0);
+
+            var s = new Stopwatch();
+            s.Start();
+            context.Shell.RunCurrentCommand();
+            s.Stop();
+            context.Log($"The command {commandName} took {s.ElapsedMilliseconds} ms.");
+        }
+
+        [FrontCommand(Help = "No operation", NumberOfArguments = 0)]
+        public static void Noop(CommandContext context) 
         { 
         }
 
-        [RegisterCommand(Help = "Quit running application", MaxArgCount = 0)]
-        static void Quit(CommandArg[] args) 
+        [Command(Name = "Test", Help = "Prints something")]
+        public static void PrintSomething(int i, int b)
         {
-        #if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false;
-        #else
-            Application.Quit();
-        #endif
-        }
-
-        static string JoinArguments(CommandArg[] args, int start = 0) 
-        {
-            var sb = new StringBuilder();
-            int arg_length = args.Length;
-
-            for (int i = start; i < arg_length; i++) {
-                sb.Append(args[i].String);
-
-                if (i < arg_length - 1) {
-                    sb.Append(" ");
-                }
-            }
-
-            return sb.ToString();
+            UnityEngine.Debug.Log(i);
+            UnityEngine.Debug.Log(b);
         }
     }
 }

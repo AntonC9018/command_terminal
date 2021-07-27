@@ -1,30 +1,19 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace CommandTerminal
 {
-    public class CaseInsensitiveDictionary<T> : Dictionary<string, T>
-    {
-        public string GetKey(string variableName) => variableName.ToUpper();
-        public new T this[string name]
-        {
-            get => base[GetKey(name)];
-            set => base[GetKey(name)] = value;
-        }
-        public new bool TryGetValue(string name, out T value) => base.TryGetValue(GetKey(name), out value);
-        public new bool Remove(string name) => base.Remove(GetKey(name));
-        public new void Add(string name, T value) => base.Add(GetKey(name), value);
-        public new bool ContainsKey(string name) => base.ContainsKey(GetKey(name));
-        public Dictionary<string, T> Raw => this;
-    }
-
-
     public class CommandShell
     {
         public readonly CaseInsensitiveDictionary<CommandBase> Commands = new CaseInsensitiveDictionary<CommandBase>();
         public readonly CommandContext Context;
         public readonly CommandLogger Logger;
+
+        public CommandShell(Terminal terminal)
+        {
+            Context = new CommandContext(terminal);
+            Logger = terminal.Logger;
+        }
 
         /// <summary>
         /// Parses an input line into a command and runs that command.
@@ -33,55 +22,30 @@ namespace CommandTerminal
         {
             Context.Reset();
             Context.SetInput(line);
-            
+
             if (!Context.TryParseCommand())
             {
                 return;
             }
 
+            RunCurrentCommand();
+        }
+
+        public void RunCurrentCommand()
+        {
             var commandName = Commands.GetKey(Context.Command);
 
             // The builtin commands
-            switch (commandName)
+            if (commandName == "ECHO")
             {
-                case "ECHO":
-                {
-                    // Actually makes a copy of the scanner
-                    var scanner = Context.Scanner;
-                    var value = scanner.GetString();
-                    
-                    // Here we check for `echo $var`
-                    if (value != null && scanner.IsEmpty && !Context.MaybeSubstitute(ref value))
-                    {
-                        Context.Log(value);
-                    }
-                    // Just print the remaining input
-                    else
-                    {
-                        // Prints everything besides echo and the empty spaces
-                        Context.Log(Context.Scanner.GetRemaining());
-                    }
-                    return;
-                }
-                case "HELP":
-                {
-                    LogHelpForNextCommand();
-                    return;
-                }
-                case "NOOP":
-                {
-                    return;
-                }
-                case "CLEAR":
-                {
-                    Context.Logger.Clear();
-                    return;
-                }
+                // Prints everything besides echo and the empty spaces
+                Context.Log(Context.Scanner.GetRemaining());
+                return;
             }
                 
             if (!Commands.Raw.TryGetValue(commandName, out var command)) 
             {
-                Logger.LogError($"Command {command} could not be found");
+                Logger.LogError($"Command {commandName} could not be found");
                 return;
             }
             
@@ -93,7 +57,7 @@ namespace CommandTerminal
 
             if (Context.Options.ContainsKey("HELP"))
             {
-                Context.Log(command.HelpMessage);
+                Context.Log(command.ExtendedHelpMessage);
                 return;
             }
 
@@ -111,7 +75,7 @@ namespace CommandTerminal
 
             if (command.MinimumNumberOfArguments > 0 && numArguments == 0)
             {
-                Context.Log(command.HelpMessage);
+                Context.Log(command.ExtendedHelpMessage);
                 return;
             }
 
@@ -147,25 +111,28 @@ namespace CommandTerminal
                 Logger.LogError($"{Context.Command} requires {errorMessage} {numRequiredArguments} argument{pluralFix}");
                 return;
             }
-
-            command.Execute(Context);
-        }
-
-        private void LogHelpForNextCommand()
-        {
-            if (Context.Arguments.Count == 0) 
+            try
             {
-                foreach (var command in Commands) 
-                {
-                    Context.Log($"{command.Key.PadRight(16)}: {command.Value.HelpMessage}");
-                }
-                return;
+                command.Execute(Context);
             }
-
-            LogHelpForCommand(Context.Arguments[0]);
+            catch (Exception exception)
+            {
+                Logger.LogError(exception.Message);
+            }
         }
 
-        private void LogHelpForCommand(string name)
+        public void LogCommands()
+        {
+            var builder = new EvenTableBuilder("Name", "Description"); 
+            foreach (var kv in Commands) 
+            {
+                builder.Append(column: 0, kv.Key);
+                builder.Append(column: 1, kv.Value.HelpMessage);
+            }
+            Logger.Log(builder.ToString());
+        }
+
+        public void LogHelpForCommand(string name)
         {
             var commandName = Context.Arguments[0];
             if (!Commands.TryGetValue(commandName, out var command)) 
@@ -176,22 +143,39 @@ namespace CommandTerminal
 
             Context.Log(command.HelpMessage);
         }
+
+        public void RegisterCommands()
+        {
+            var builtin = CommandTerminal.Generated.Commands.BuiltinCommands;
+            for (int i = 0; i < builtin.Length; i++)
+            {
+                Commands.Add(builtin[i].Name, builtin[i].Command);
+            }
+        }
     }
 
-        
-
-    // Meta commands cannot be called directly
-    // They are handled in a special way and the shell is aware of them
-    public class MetaCommand : CommandBase
+    public abstract class CommandBase
     {
-        public MetaCommand(int minimumNumberOfArguments, int maximumNumberOfArguments, string helpMessage) 
-            : base(minimumNumberOfArguments, maximumNumberOfArguments, helpMessage)
+        public abstract void Execute(CommandContext context);
+        public readonly int MinimumNumberOfArguments;
+        public readonly int MaximumNumberOfArguments;
+        public readonly string HelpMessage;
+        public readonly string ExtendedHelpMessage;
+
+        protected CommandBase(int minimumNumberOfArguments, int maximumNumberOfArguments, string helpMessage, string extendedHelpMessage)
         {
+            MinimumNumberOfArguments = minimumNumberOfArguments;
+            MaximumNumberOfArguments = maximumNumberOfArguments;
+            HelpMessage = helpMessage;
+            ExtendedHelpMessage = extendedHelpMessage;
         }
 
-        public override void Execute(CommandContext context)
+        protected CommandBase(int minimumNumberOfArguments, int maximumNumberOfArguments, string helpMessage)
         {
-            throw new NotImplementedException();
+            MinimumNumberOfArguments = minimumNumberOfArguments;
+            MaximumNumberOfArguments = maximumNumberOfArguments;
+            HelpMessage = helpMessage;
+            ExtendedHelpMessage = helpMessage;
         }
     }
 
