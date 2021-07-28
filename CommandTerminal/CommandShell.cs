@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
+using System.Linq;
 
 namespace CommandTerminal
 {
@@ -9,8 +12,13 @@ namespace CommandTerminal
         public readonly CommandContext Context;
         public readonly CommandLogger Logger;
 
+        private static readonly string ECHO = CaseInsensitiveDictionary<CommandBase>._GetKey("echo");
+        private static readonly MetaCommand EchoCommand = new MetaCommand(0, -1, "Logs the arguments"); 
+        private static readonly string HELP = CaseInsensitiveDictionary<string>._GetKey("help");
+
         public CommandShell(Terminal terminal)
         {
+            Commands.Raw.Add(ECHO, EchoCommand);
             Context = new CommandContext(terminal);
             Logger = terminal.Logger;
         }
@@ -36,7 +44,7 @@ namespace CommandTerminal
             var commandName = Commands.GetKey(Context.Command);
 
             // The builtin commands
-            if (commandName == "ECHO")
+            if (commandName == ECHO)
             {
                 // Prints everything besides echo and the empty spaces
                 Context.Log(Context.Scanner.GetRemaining());
@@ -45,7 +53,7 @@ namespace CommandTerminal
                 
             if (!Commands.Raw.TryGetValue(commandName, out var command)) 
             {
-                Logger.LogError($"Command {commandName} could not be found");
+                Logger.LogError($"Command `{commandName}` could not be found");
                 return;
             }
             
@@ -55,7 +63,7 @@ namespace CommandTerminal
             Context.ParseOptions();
             if (Context.HasErrors) return;
 
-            if (Context.Options.ContainsKey("HELP"))
+            if (Context.Options.ContainsKey(HELP))
             {
                 Context.Log(command.ExtendedHelpMessage);
                 return;
@@ -121,15 +129,13 @@ namespace CommandTerminal
             }
         }
 
+        private readonly EvenTableBuilder _commandTableBuilder = new EvenTableBuilder("Name", "Description");
+        private string _commandTableBuilderResult = null;
+
         public void LogCommands()
         {
-            var builder = new EvenTableBuilder("Name", "Description"); 
-            foreach (var kv in Commands) 
-            {
-                builder.Append(column: 0, kv.Key);
-                builder.Append(column: 1, kv.Value.HelpMessage);
-            }
-            Logger.Log(builder.ToString());
+            _commandTableBuilderResult ??= _commandTableBuilder.ToString();
+            Logger.Log(_commandTableBuilderResult);
         }
 
         public void LogHelpForCommand(string name)
@@ -137,7 +143,7 @@ namespace CommandTerminal
             var commandName = Context.Arguments[0];
             if (!Commands.TryGetValue(commandName, out var command)) 
             {
-                Context.Log($"Command {commandName} could not be found.");
+                Context.LogError($"Command `{commandName}` could not be found.");
                 return;
             }
 
@@ -149,7 +155,38 @@ namespace CommandTerminal
             var builtin = CommandTerminal.Generated.Commands.BuiltinCommands;
             for (int i = 0; i < builtin.Length; i++)
             {
-                Commands.Add(builtin[i].Name, builtin[i].Command);
+                RegisterCommand(builtin[i].Name, builtin[i].Command);
+            }
+        }
+
+        public void RegisterCommand(string name, CommandBase command)
+        {
+            _commandTableBuilderResult = null;
+            _commandTableBuilder.Append(column: 0, name);
+            _commandTableBuilder.Append(column: 1, command.HelpMessage);
+            Commands.Add(name, command);
+        }
+
+        public IEnumerable<string> GetMatchingWords(string partialWord)
+        {
+            // Context matches variables.
+            var enumerable = Context.GetMatchingWords(partialWord);
+            // If it's a variable, it cannot be a command.
+            if (enumerable.Any())
+            {
+                foreach (string word in enumerable)
+                {
+                    yield return word;
+                }
+                yield break;
+            }
+            
+            foreach (string word in Commands.Keys)
+            {
+                if (word.StartsWith(partialWord, StringComparison.OrdinalIgnoreCase))
+                {
+                    yield return word;
+                }
             }
         }
     }
@@ -176,6 +213,18 @@ namespace CommandTerminal
             MaximumNumberOfArguments = maximumNumberOfArguments;
             HelpMessage = helpMessage;
             ExtendedHelpMessage = helpMessage;
+        }
+    }
+
+    public class MetaCommand : CommandBase
+    {
+        public MetaCommand(int minimumNumberOfArguments, int maximumNumberOfArguments, string helpMessage) : base(minimumNumberOfArguments, maximumNumberOfArguments, helpMessage)
+        {
+        }
+
+        public override void Execute(CommandContext context)
+        {
+            throw new NotImplementedException();
         }
     }
 

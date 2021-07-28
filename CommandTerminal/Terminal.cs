@@ -136,14 +136,9 @@ namespace CommandTerminal
             Logger = new CommandLogger(BufferSize);
             Shell = new CommandShell(this);
             History = new CommandHistory();
-            Autocomplete = new CommandAutocomplete();
+            Autocomplete = new CommandAutocomplete(Shell);
 
             Shell.RegisterCommands();
-            
-            foreach (var command in Shell.Commands)
-            {
-                Autocomplete.Register(command.Key);
-            }
 
             // Hook Unity log events
             Application.logMessageReceivedThreaded += HandleUnityLog;
@@ -156,7 +151,6 @@ namespace CommandTerminal
 
         void Start()
         {
-
             if (ConsoleFont == null)
             {
                 ConsoleFont = Font.CreateDynamicFontFromOSFont("Courier New", 16);
@@ -259,9 +253,15 @@ namespace CommandTerminal
                 move_cursor = false;
             }
 
+            if (Autocomplete.Match != command_text)
+            {
+                Autocomplete.Reset();
+            }
+
             if (Event.current.Equals(Event.KeyboardEvent("escape")))
             {
-                SetState(TerminalState.Close);
+                if (command_text != "") command_text = "";
+                else SetState(TerminalState.Close);
             }
             else if (Event.current.Equals(Event.KeyboardEvent("return"))
               || Event.current.Equals(Event.KeyboardEvent("[enter]")))
@@ -287,7 +287,7 @@ namespace CommandTerminal
             }
             else if (Event.current.Equals(Event.KeyboardEvent("tab")))
             {
-                CompleteCommand();
+                command_text = CompleteCommand();
                 move_cursor = true; // Wait till next draw call
             }
 
@@ -389,32 +389,26 @@ namespace CommandTerminal
             scroll_position.y = int.MaxValue;
         }
 
-        void CompleteCommand()
+        string CompleteCommand()
         {
-            string head_text = command_text;
-            int format_width = 0;
-
-            string[] completion_buffer = Autocomplete.Complete(ref head_text, ref format_width);
-            int completion_length = completion_buffer.Length;
-
-            if (completion_length != 0)
+            if (!Autocomplete.IsMatching)
             {
-                command_text = head_text;
-            }
+                Autocomplete.ResetCurrentInput(command_text);
 
-            if (completion_length > 1)
-            {
                 // Print possible completions
-                var log_buffer = new StringBuilder();
+                var log_buffer = new ListBuilder("    ");
 
-                foreach (string completion in completion_buffer)
+                foreach (string match in Autocomplete.Matches)
                 {
-                    log_buffer.Append(completion.PadRight(format_width + 4));
+                    log_buffer.Append(match);
                 }
 
                 Logger.Log(log_buffer.ToString());
                 scroll_position.y = int.MaxValue;
             }
+
+            Autocomplete.MoveMatch(+1);
+            return Autocomplete.Match;
         }
 
         void CursorToEnd()

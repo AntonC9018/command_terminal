@@ -1,84 +1,134 @@
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace CommandTerminal
 {
     public class CommandAutocomplete
     {
-        List<string> known_words = new List<string>();
-        List<string> buffer = new List<string>();
+        /// <summary>
+        /// Matches for the current input + the current input.
+        /// For "hello w" it would be ["world", "w"].
+        /// </summary>
+        /// <remarks>
+        /// The shorter matches are found first in the list.
+        /// If the current partial word is not among the matched words, 
+        /// it will appear as the last word in this list. 
+        /// This implies the length of this list is at least 1, given we are currently matching.
+        /// </remarks>
+        public readonly List<string> Matches = new List<string>();
 
-        public void Register(string word) 
+        /// <summary>
+        /// The latest match.
+        /// If the input "hello w" has been set, this is "hello world".
+        /// Once `NextMatch()` is called, this becomes "hello w", then loops back again.
+        /// </summary>
+        public string Match => _currentMatch;
+
+        /// <summary>
+        /// Returns true if the input has been initialized.
+        /// </summary>
+        public bool IsMatching => _currentMatch != null;
+
+        /// <summary>
+        /// Index of the currently active match.
+        /// </summary>
+        public int MatchIndex 
         {
-            known_words.Add(word.ToLower());
+            get => _matchIndex;
+            set => MoveTo(value);
         }
 
-        public string[] Complete(ref string text, ref int format_width) 
+        /// <summary>
+        /// The word that is currently being matched against.
+        /// </summary>
+        public string PartialWord => _partialWord;
+
+        private int _matchIndex;
+        private string _partialWord;
+        private string _currentMatch;
+        private string _currentInputWithoutMatch;
+        private readonly CommandShell _shell;
+
+        public CommandAutocomplete(CommandShell shell)
         {
-            string partial_word = EatLastWord(ref text).ToLower();
-            string known;
-
-            for (int i = 0; i < known_words.Count; i++) 
-            {
-                known = known_words[i];
-
-                if (known.StartsWith(partial_word)) 
-                {
-                    buffer.Add(known);
-
-                    if (known.Length > format_width) 
-                    {
-                        format_width = known.Length;
-                    }
-                }
-            }
-
-            string[] completions = buffer.ToArray();
-            buffer.Clear();
-
-            text += PartialWord(completions);
-            return completions;
+            _shell = shell;
         }
 
-        string EatLastWord(ref string text) 
+        /// <summary>
+        /// Moves the current match index by the specified direction.
+        /// Loops over as necessary.
+        /// `MoveMatch(+1)` would advance it to the next match,
+        /// `MoveMatch(-1)` — to the previous one.
+        /// </summary>
+        public void MoveMatch(int direction)
         {
-            int last_space = text.LastIndexOf(' ');
-            string result = text.Substring(last_space + 1);
-
-            text = text.Substring(0, last_space + 1); // Remaining (keep space)
-            return result;
+            Debug.Assert(IsMatching);
+            _matchIndex   = (_matchIndex + direction + Matches.Count) % Matches.Count;
+            _currentMatch = _currentInputWithoutMatch + Matches[_matchIndex];
         }
 
-        string PartialWord(string[] words) 
+        /// <summary>
+        /// Same as setting the `MatchIndex` to a value.
+        /// </summary>
+        public void MoveTo(int index)
         {
-            if (words.Length == 0) 
-            {
-                return "";
-            }
+            Debug.Assert(IsMatching);
+            Debug.Assert(index >= 0);
+            if (index == _matchIndex) 
+                return;
+            _matchIndex = index % Matches.Count;
+            _currentMatch = _currentInputWithoutMatch + Matches[_matchIndex];
+        }
 
-            string first_match = words[0];
-            int partial_length = first_match.Length;
+        /// <summary>
+        /// Resets the input, after which resets the matches.
+        /// </summary>
+        public void ResetCurrentInput(string text)
+        {
+            int spaceIndex = text.LastIndexOf(' ');
+            
+            _currentInputWithoutMatch = (spaceIndex == -1) ? "" : text.Substring(0, spaceIndex + 1);
+            _currentMatch = text;
+            _partialWord = text.Substring(spaceIndex + 1);
+            _matchIndex = -1;
+            ResetMatches();
+        }
 
-            if (words.Length == 1) 
-            {
-                return first_match;
-            }
+        /// <summary>
+        /// Resets the matches for the currently saved word.
+        /// </summary>
+        public void ResetMatches()
+        {
+            Matches.Clear();
 
-            foreach (string word in words) 
+            bool isExactMatch = false;
+            foreach (var word in _shell.GetMatchingWords(_partialWord))
             {
-                if (partial_length > word.Length) 
+                if (word == _partialWord) 
                 {
-                    partial_length = word.Length;
+                    isExactMatch = true;
                 }
-
-                for (int i = 0; i < partial_length; i++) 
-                {
-                    if (word[i] != first_match[i]) 
-                    {
-                        partial_length = i;
-                    }
-                }
+                Matches.Add(word);
             }
-            return first_match.Substring(0, partial_length);
+
+            // The shorter matches should come first.
+            Matches.Sort((a, b) => a.Length - b.Length);
+
+            // Do not save the input if it has a corresponding exact match.
+            // Otherwise, the input will be the last one in the list.
+            if (!isExactMatch)
+            {
+                Matches.Add(_partialWord);
+            }
+        }
+
+        /// <summary>
+        /// Makes `IsMatching` return false.
+        /// Most public data is not reset until `ResetCurrentInput()` is called.
+        /// </summary>
+        public void Reset()
+        {
+            _currentMatch = null;
         }
     }
 }

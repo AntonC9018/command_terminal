@@ -74,6 +74,12 @@ namespace SomeProject.CommandTerminalBasics
         { 
         }
 
+        [FrontCommand(Help = "Logs the only argument", NumberOfArguments = 1)]
+        public static void Log(CommandContext context)
+        {
+            context.Log(context.Arguments[0]);
+        }
+
         [Command(Name = "Test", Help = "Prints something")]
         public static void PrintSomething(int i, int b)
         {

@@ -73,6 +73,27 @@ namespace CommandTerminal
             return true;
         }
 
+        public IEnumerable<string> GetMatchingWords(string partialWord)
+        {
+            // Return all if given an empty string
+            if (partialWord.Length == 0)
+            {
+                foreach (var word in Variables.Keys) 
+                    yield return varSubChar +  word;
+            }
+            else if (partialWord[0] == varSubChar)
+            {
+                string remaining = partialWord.Substring(1);
+                foreach (string word in Variables.Keys)
+                {
+                    if (word.StartsWith(remaining, System.StringComparison.OrdinalIgnoreCase))
+                    {
+                        yield return varSubChar + word;
+                    }
+                }
+            }
+        }
+
         public void ParseArguments()
         {
             string argument;
@@ -183,7 +204,7 @@ namespace CommandTerminal
             }
             return result;
         }
-        
+
         public T ParseOption<T>(string optionName, T defaultValue, IValueParser<T> parser)
         {
             if (!Options.TryGetValue(optionName, out string option))

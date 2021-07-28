@@ -26,6 +26,7 @@ namespace CommandTerminal
 
         public bool IsEmpty => _currentIndex >= Source.Length;
         public char Current => Source[_currentIndex];
+        public void Advance() => _currentIndex++;
 
         public string GetRemaining()
         {
