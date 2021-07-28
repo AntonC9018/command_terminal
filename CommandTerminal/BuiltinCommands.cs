@@ -1,6 +1,7 @@
 using System.Diagnostics;
-using CommandTerminal;
+using SomeProject.CommandTerminal;
 using Kari;
+using SomeProject.CommandTerminal.Generated;
 
 namespace SomeProject.CommandTerminalBasics
 {
@@ -58,7 +59,9 @@ namespace SomeProject.CommandTerminalBasics
         [FrontCommand(Help = "Logs the time a command takes to execute", MinimumNumberOfArguments = 1)]
         public static void Time(CommandContext context)
         {
-            var commandName = context.Arguments[0];
+            var commandName = context.ParseArgument(0, "command");
+            if (context.HasErrors) return;
+
             context.Command = commandName;
             context.Arguments.RemoveAt(0);
 
@@ -77,7 +80,9 @@ namespace SomeProject.CommandTerminalBasics
         [FrontCommand(Help = "Logs the only argument", NumberOfArguments = 1)]
         public static void Log(CommandContext context)
         {
-            context.Log(context.Arguments[0]);
+            var argumentToLog = context.ParseArgument(0, "argumentToLog");
+            if (!context.HasErrors)
+                context.Log(argumentToLog);
         }
 
         [Command(Name = "Test", Help = "Prints something")]
@@ -87,12 +92,13 @@ namespace SomeProject.CommandTerminalBasics
             UnityEngine.Debug.Log(b);
         }
 
-        [Command("Hello", "Some parameter")]
+        [Command("Hello", "Some test command")]
         public static string SomeCommand(
-            [Argument("pos help")]                    int positional,
-            [Argument("optional", "optional help")]   string optional,
-            [Option("flag", "idk1", Parser = "Switch")]   bool flag,
-            [Option("option", "idk2")]                string option = "44")
+            [Argument("pos help")]                                      int positional,
+            [Argument("optional", "optional help")]                     string optional,
+            // TODO: Instead of Boolean, say what parser the type expects.
+            [Option("flag", "idk1", Parser = nameof(Parsers.Switch))]   bool flag,
+            [Option("option", "idk2")]                                  string option = "44")
         {
             return $"{positional}; {optional}; {flag}; {option};";
         }
@@ -113,7 +119,7 @@ namespace SomeProject.CommandTerminalBasics
             }
 
             output = false;
-            return ParseSummary.TypeMismatch("switch(bool)", input);
+            return ParseSummary.TypeMismatch("Switch (on/off)", input);
         }
     }
 }

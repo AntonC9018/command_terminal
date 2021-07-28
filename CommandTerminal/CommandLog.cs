@@ -1,6 +1,6 @@
-namespace CommandTerminal
+namespace SomeProject.CommandTerminal
 {
-    [System.Flags]
+    [Kari.NiceFlags]
     public enum LogTypes
     {
         Error     = 1 << 0,

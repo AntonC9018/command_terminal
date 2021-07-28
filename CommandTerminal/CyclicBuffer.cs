@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 
-namespace CommandTerminal
+namespace SomeProject.CommandTerminal
 {
     public class CyclicBuffer<T> : IEnumerable<T> where T : struct
     {

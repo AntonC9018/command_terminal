@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace CommandTerminal
+namespace SomeProject.CommandTerminal
 {
     public class CaseInsensitiveDictionary<T> : Dictionary<string, T>
     {

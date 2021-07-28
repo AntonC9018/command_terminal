@@ -1,5 +1,5 @@
 
-namespace CommandTerminal
+namespace SomeProject.CommandTerminal
 {
     public struct Option
     {

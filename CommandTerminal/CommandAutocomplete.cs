@@ -1,7 +1,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
-namespace CommandTerminal
+namespace SomeProject.CommandTerminal
 {
     public class CommandAutocomplete
     {
@@ -15,14 +16,21 @@ namespace CommandTerminal
         /// it will appear as the last word in this list. 
         /// This implies the length of this list is at least 1, given we are currently matching.
         /// </remarks>
-        public readonly List<string> Matches = new List<string>();
+        public readonly List<string> MatchedWords = new List<string>();
 
         /// <summary>
         /// The latest match.
         /// If the input "hello w" has been set, this is "hello world".
-        /// Once `NextMatch()` is called, this becomes "hello w", then loops back again.
+        /// Once `MoveNext(+1)` is called, this becomes "hello w", then loops back again.
         /// </summary>
-        public string Match => _currentMatch;
+        public string FullMatch => _currentMatch;
+
+        /// <summary>
+        /// Returns the currently matched word.
+        /// Use `MoveNext(+1)` to match the next word.
+        /// </summary>
+        public string MathedWord => _currentMatch;
+
 
         /// <summary>
         /// Returns true if the input has been initialized.
@@ -63,8 +71,8 @@ namespace CommandTerminal
         public void MoveMatch(int direction)
         {
             Debug.Assert(IsMatching);
-            _matchIndex   = (_matchIndex + direction + Matches.Count) % Matches.Count;
-            _currentMatch = _currentInputWithoutMatch + Matches[_matchIndex];
+            _matchIndex   = (_matchIndex + direction + MatchedWords.Count) % MatchedWords.Count;
+            _currentMatch = _currentInputWithoutMatch + MatchedWords[_matchIndex];
         }
 
         /// <summary>
@@ -76,8 +84,8 @@ namespace CommandTerminal
             Debug.Assert(index >= 0);
             if (index == _matchIndex) 
                 return;
-            _matchIndex = index % Matches.Count;
-            _currentMatch = _currentInputWithoutMatch + Matches[_matchIndex];
+            _matchIndex = index % MatchedWords.Count;
+            _currentMatch = _currentInputWithoutMatch + MatchedWords[_matchIndex];
         }
 
         /// <summary>
@@ -88,10 +96,10 @@ namespace CommandTerminal
             int spaceIndex = text.LastIndexOf(' ');
             
             _currentInputWithoutMatch = (spaceIndex == -1) ? "" : text.Substring(0, spaceIndex + 1);
-            _currentMatch = text;
             _partialWord = text.Substring(spaceIndex + 1);
-            _matchIndex = -1;
             ResetMatches();
+            _matchIndex = 0;
+            _currentMatch = _currentInputWithoutMatch + MatchedWords[_matchIndex];
         }
 
         /// <summary>
@@ -99,7 +107,7 @@ namespace CommandTerminal
         /// </summary>
         public void ResetMatches()
         {
-            Matches.Clear();
+            MatchedWords.Clear();
 
             bool isExactMatch = false;
             foreach (var word in _shell.GetMatchingWords(_partialWord))
@@ -108,17 +116,17 @@ namespace CommandTerminal
                 {
                     isExactMatch = true;
                 }
-                Matches.Add(word);
+                MatchedWords.Add(word);
             }
 
             // The shorter matches should come first.
-            Matches.Sort((a, b) => a.Length - b.Length);
+            MatchedWords.Sort((a, b) => a.Length - b.Length);
 
             // Do not save the input if it has a corresponding exact match.
             // Otherwise, the input will be the last one in the list.
             if (!isExactMatch)
             {
-                Matches.Add(_partialWord);
+                MatchedWords.Add(_partialWord);
             }
         }
 

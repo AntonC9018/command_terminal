@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 
-namespace CommandTerminal
+namespace SomeProject.CommandTerminal
 {
     public class CommandShell
     {
@@ -12,9 +12,17 @@ namespace CommandTerminal
         public readonly CommandContext Context;
         public readonly CommandLogger Logger;
 
-        private static readonly string ECHO = CaseInsensitiveDictionary<CommandBase>._GetKey("echo");
-        private static readonly MetaCommand EchoCommand = new MetaCommand(0, -1, "Logs the arguments"); 
         private static readonly string HELP = CaseInsensitiveDictionary<string>._GetKey("help");
+        private static readonly string ECHO = CaseInsensitiveDictionary<CommandBase>._GetKey("echo");
+
+        /// <summary>
+        /// The echo command must never be called directly, it is intercepted and treated differently.
+        /// However, the info about it should be available to autocompletion and things like that.
+        /// TODO: 
+        /// this is mostly an artifact of the fact that the arguments are not in fact treated as tokens,
+        /// but as plain strings. Because of this, information about their position in the source string is lost.
+        /// </summary>
+        private static readonly InterceptableCommand EchoCommand = new InterceptableCommand(0, -1, "Logs the arguments"); 
 
         public CommandShell(Terminal terminal)
         {
@@ -43,7 +51,8 @@ namespace CommandTerminal
         {
             var commandName = Commands.GetKey(Context.Command);
 
-            // The builtin commands
+            // The echo command needs info on the input string just after the command,
+            // before it is actually scanned or parsed. 
             if (commandName == ECHO)
             {
                 // Prints everything besides echo and the empty spaces
@@ -53,16 +62,18 @@ namespace CommandTerminal
                 
             if (!Commands.Raw.TryGetValue(commandName, out var command)) 
             {
-                Logger.LogError($"Command `{commandName}` could not be found");
+                Logger.LogError($"Command `{commandName}` could not be found.");
                 return;
             }
             
-            Context.ParseArguments();
+            Context.ScanArguments();
             if (Context.HasErrors) return;
 
-            Context.ParseOptions();
+            Context.ScanOptions();
             if (Context.HasErrors) return;
 
+            // The help on any command means we print the help message instead of running the command.
+            // This behavior cannot be controlled from the commands themselves.
             if (Context.ParseFlag(HELP))
             {
                 Context.Log(command.ExtendedHelpMessage);
@@ -76,9 +87,10 @@ namespace CommandTerminal
 
         private void RunCommand(CommandBase command) 
         {
-            int numArguments = Context.Arguments.Count;
 
-            if (command.MinimumNumberOfArguments > 0 && numArguments == 0 && Context.Options.Count == 0)
+            // If the command expects no arguments, show the help message.
+            if (command.MinimumNumberOfArguments > 0 
+                && Context.Arguments.Count == 0 && Context.Options.Count == 0)
             {
                 Context.Log(command.ExtendedHelpMessage);
                 return;
@@ -90,6 +102,9 @@ namespace CommandTerminal
             }
             catch (Exception exception)
             {
+                // TODO: 
+                // We lose info on stack trace here. 
+                // Ideally, it should be logged in a special way, with a tree view or something.
                 Logger.LogError(exception.Message);
             }
         }
@@ -103,9 +118,8 @@ namespace CommandTerminal
             Logger.Log(_commandTableBuilderResult);
         }
 
-        public void LogHelpForCommand(string name)
+        public void LogHelpForCommand(string commandName)
         {
-            var commandName = Context.Arguments[0];
             if (!Commands.TryGetValue(commandName, out var command)) 
             {
                 Context.LogError($"Command `{commandName}` could not be found.");
@@ -117,7 +131,7 @@ namespace CommandTerminal
 
         public void RegisterCommands()
         {
-            var builtin = CommandTerminal.Generated.Commands.BuiltinCommands;
+            var builtin = SomeProject.CommandTerminal.Generated.Commands.BuiltinCommands;
             for (int i = 0; i < builtin.Length; i++)
             {
                 RegisterCommand(builtin[i].Name, builtin[i].Command);
@@ -126,6 +140,7 @@ namespace CommandTerminal
 
         public void RegisterCommand(string name, CommandBase command)
         {
+            // Mark the builder dirty.
             _commandTableBuilderResult = null;
             _commandTableBuilder.Append(column: 0, name);
             _commandTableBuilder.Append(column: 1, command.HelpMessage);
@@ -156,11 +171,14 @@ namespace CommandTerminal
         }
     }
 
+    /// <summary>
+    /// Defines the data model of any reasonable command.
+    /// </summary>
     public abstract class CommandBase
     {
         public abstract void Execute(CommandContext context);
         public readonly int MinimumNumberOfArguments;
-        public readonly int MaximumNumberOfArguments;
+        public readonly int MaximumNumberOfArguments; // TODO: Never used, should be removed?
         public readonly string HelpMessage;
         public readonly string ExtendedHelpMessage;
 
@@ -181,9 +199,13 @@ namespace CommandTerminal
         }
     }
 
-    public class MetaCommand : CommandBase
+    /// <summary>
+    /// Such commands should always be intercepted by the shell 
+    /// and so are assumed to never be called directly.
+    /// </summary>
+    public class InterceptableCommand : CommandBase
     {
-        public MetaCommand(int minimumNumberOfArguments, int maximumNumberOfArguments, string helpMessage) : base(minimumNumberOfArguments, maximumNumberOfArguments, helpMessage)
+        public InterceptableCommand(int minimumNumberOfArguments, int maximumNumberOfArguments, string helpMessage) : base(minimumNumberOfArguments, maximumNumberOfArguments, helpMessage)
         {
         }
 
@@ -193,6 +215,9 @@ namespace CommandTerminal
         }
     }
 
+    /// <summary>
+    /// This class can be used to define runtime commands via a lambda.
+    /// </summary>
     public class GenericCommand : CommandBase
     {
         public readonly Action<CommandContext> _proc;

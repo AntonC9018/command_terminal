@@ -3,7 +3,7 @@ using System.Text;
 using System.Collections;
 using UnityEngine.Assertions;
 
-namespace CommandTerminal
+namespace SomeProject.CommandTerminal
 {
     public enum TerminalState
     {
@@ -253,7 +253,7 @@ namespace CommandTerminal
                 move_cursor = false;
             }
 
-            if (Autocomplete.Match != command_text)
+            if (Autocomplete.FullMatch != command_text)
             {
                 Autocomplete.Reset();
             }
@@ -398,7 +398,7 @@ namespace CommandTerminal
                 // Print possible completions
                 var log_buffer = new ListBuilder("    ");
 
-                foreach (string match in Autocomplete.Matches)
+                foreach (string match in Autocomplete.MatchedWords)
                 {
                     log_buffer.Append(match);
                 }
@@ -406,9 +406,12 @@ namespace CommandTerminal
                 Logger.Log(log_buffer.ToString());
                 scroll_position.y = int.MaxValue;
             }
+            else
+            {
+                Autocomplete.MoveMatch(+1);
+            }
 
-            Autocomplete.MoveMatch(+1);
-            return Autocomplete.Match;
+            return Autocomplete.FullMatch;
         }
 
         void CursorToEnd()

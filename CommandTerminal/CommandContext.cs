@@ -1,38 +1,80 @@
 
-namespace CommandTerminal
+namespace SomeProject.CommandTerminal
 {
     using System.Collections.Generic;
+    using SomeProject.Generated;
 
+    /// <summary>
+    /// Manages command name and argument parsing.
+    /// The context is also responsible for variable substitution.
+    /// </summary>
     public class CommandContext
     {
         public Scanner Scanner;
+        
+        /// <summary>
+        /// The name of the currently parsed command.
+        /// </summary>
         public string Command { get; set; }
-        public readonly List<string> Arguments;
-        public readonly CaseInsensitiveDictionary<string> Options;
-        public readonly CaseInsensitiveDictionary<string> Variables;
+        
+        /// <summary>
+        /// The scanned arguments, as strings.
+        /// </summary>
+        public readonly List<string> Arguments = new List<string>();
+        
+        /// <summary>
+        /// The scanned options, as strings.
+        /// </summary>
+        public readonly CaseInsensitiveDictionary<string> Options = new CaseInsensitiveDictionary<string>();
+
+        /// <summary>
+        /// A mapping from variable names to values.
+        /// All values are strings.
+        /// </summary>
+        public readonly CaseInsensitiveDictionary<string> Variables = new CaseInsensitiveDictionary<string>();
+
+        
+        /// <summary>
+        /// The character that must appear before a string for it 
+        /// to be parsed as a variable and substituted a value.
+        /// Both $var and "$var" are substituted the value of var and the " are dropped.
+        /// </summary>
+        public const char VarSubChar = '$';
+
+
+        /// <summary>
+        /// A backreference to the terminal, required for meta commands.
+        /// </summary>
         public readonly Terminal Terminal;
+
         public CommandLogger Logger => Terminal.Logger;
         public CommandShell Shell => Terminal.Shell;
 
+        
+        /// <summary>
+        /// The types of messages emitted since the context had been last reset.
+        /// </summary>
         private LogTypes _recordedMessageTypes = 0;
-        // TODO: implement this when I add the previous flag helper functions
-        // public static bool TreatWarningsAsErrors { set => MessageTypesConsideredError |= 
+        
+        /// <summary>
+        /// Whether HasErrors should be true if a warning had been logged.
+        /// </summary>
+        public static bool TreatWarningsAsErrors 
+        { 
+            get => MessageTypesConsideredError.HasFlag(LogTypes.Warning);
+            set => MessageTypesConsideredError.Set(LogTypes.Warning, value);
+        }
         private static LogTypes MessageTypesConsideredError = LogTypes.Warning | LogTypes.Error;
-        public bool HasErrors => (_recordedMessageTypes & MessageTypesConsideredError) != 0;
-        // { get { 
-        //         for (int i = 0; i < Messages.Count; i++)
-        //         {
-        //             if (Messages[i].MessageType == MessageType.Error) return true;
-        //         }
-        //         return false;
-        // } }
+
+        /// <summary>
+        /// Indicates whether an error has been logged via the context since the last time
+        /// it had been reset.
+        /// </summary>
+        public bool HasErrors => _recordedMessageTypes.HasEitherFlag(MessageTypesConsideredError);
 
         public CommandContext(Terminal terminal)
         {
             Terminal = terminal;
-            Variables = new CaseInsensitiveDictionary<string>();
-            Options = new CaseInsensitiveDictionary<string>();
-            Arguments = new List<string>();
         }
 
         public void Reset()
@@ -58,13 +100,16 @@ namespace CommandTerminal
             return result;
         }
 
-        const char varSubChar = '$';
-        public bool MaybeSubstitute(ref string value)
+        /// <summary>
+        /// If the input represents a variable, substitutes it with the value of the variable.
+        /// Returns `false` only if the variable represented a variable, but such variable was not found.
+        /// </summary>
+        public bool MaybeSubstitute(ref string input)
         {
-            if (!string.IsNullOrEmpty(value) && value[0] == varSubChar)
+            if (!string.IsNullOrEmpty(input) && input[0] == VarSubChar)
             {
-                var variableName = value.Substring(1);
-                if (!Variables.TryGetValue(variableName, out value))
+                var variableName = input.Substring(1);
+                if (!Variables.TryGetValue(variableName, out input))
                 {
                     LogError($"No variable named {variableName}");
                     return false;
@@ -73,28 +118,39 @@ namespace CommandTerminal
             return true;
         }
 
+        
+        /// <summary>
+        /// Enumerates variable names, with the variable prefix, that match the input.
+        /// </summary>
+        /// <remarks>
+        /// If the input does not start with the variable prefix, nothing is returned.
+        /// If the input is empty, all variable names are retuned.
+        /// </remarks>
         public IEnumerable<string> GetMatchingWords(string partialWord)
         {
             // Return all if given an empty string
             if (partialWord.Length == 0)
             {
                 foreach (var word in Variables.Keys) 
-                    yield return varSubChar +  word;
+                    yield return VarSubChar + word;
             }
-            else if (partialWord[0] == varSubChar)
+            else if (partialWord[0] == VarSubChar)
             {
                 string remaining = partialWord.Substring(1);
                 foreach (string word in Variables.Keys)
                 {
                     if (word.StartsWith(remaining, System.StringComparison.OrdinalIgnoreCase))
                     {
-                        yield return varSubChar + word;
+                        yield return VarSubChar + word;
                     }
                 }
             }
         }
 
-        public void ParseArguments()
+        /// <summary>
+        /// Scans the input for all arguments, substituting variables as expected.
+        /// </summary>
+        public void ScanArguments()
         {
             string argument;
             while (Scanner.TryGet(out argument))
@@ -105,8 +161,12 @@ namespace CommandTerminal
             }
         }
 
-        // Only allow options after all positional arguments
-        public void ParseOptions()
+        /// <summary>
+        /// Scans the input for all options.
+        /// The input must currently start with options, which is to say
+        /// that options come after all positional arguments.
+        /// </summary>
+        public void ScanOptions()
         {
             Option option;
             while (Scanner.TryGet(out option))
@@ -117,7 +177,6 @@ namespace CommandTerminal
             }
         }
 
-        
         public void Log(Message message)
         {
             _recordedMessageTypes |= message.Type;
@@ -162,6 +221,10 @@ namespace CommandTerminal
             return $"{number.ToString()}{GetOrdinalSuffix(number)}";
         }
 
+
+        /// <summary>
+        /// Tries getting a positional argument as a string.
+        /// </summary>
         public string ParseArgument(int argumentIndex, string argumentName)
         {
             if (Arguments.Count <= argumentIndex)
@@ -176,14 +239,14 @@ namespace CommandTerminal
         {
             if (Arguments.Count <= argumentIndex)
             {
-                LogError($"Missing {GetOrdinal(argumentIndex)} argument '{argumentName}'");
+                LogError($"Missing {GetOrdinal(argumentIndex + 1)} argument '{argumentName}'");
                 return default;
             }
             var argument = Arguments[argumentIndex];
             var summary = parser.Parse(argument, out T result);
             if (summary.IsError)
             {
-                LogError($"Error while parsing {GetOrdinal(argumentIndex)} argument '{argumentName}': " + summary.Message);
+                LogError($"Error while parsing {GetOrdinal(argumentIndex + 1)} argument '{argumentName}': " + summary.Message);
             }
             return result;
         }
@@ -244,6 +307,9 @@ namespace CommandTerminal
             return result;
         }
 
+        /// <summary>
+        /// Logs warnings abount unknown arguments.
+        /// </summary>
         public void EndParsing()
         {
             foreach (var key in Options.Keys)
