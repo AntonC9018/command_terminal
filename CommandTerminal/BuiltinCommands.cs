@@ -77,7 +77,7 @@ namespace SomeProject.CommandTerminalBasics
         { 
         }
 
-        [FrontCommand(Help = "Logs the only argument", NumberOfArguments = 1)]
+        [FrontCommand(Help = "Logs the only argument, evaluating variables", NumberOfArguments = 1)]
         public static void Log(CommandContext context)
         {
             var argumentToLog = context.ParseArgument(0, "argumentToLog");
@@ -96,7 +96,6 @@ namespace SomeProject.CommandTerminalBasics
         public static string SomeCommand(
             [Argument("pos help")]                                      int positional,
             [Argument("optional", "optional help")]                     string optional,
-            // TODO: Instead of Boolean, say what parser the type expects.
             [Option("flag", "idk1", Parser = nameof(Parsers.Switch))]   bool flag,
             [Option("option", "idk2")]                                  string option = "44")
         {

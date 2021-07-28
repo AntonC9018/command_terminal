@@ -21,7 +21,7 @@ namespace SomeProject.CommandTerminal
         public bool IsError => Message != null;
         public ParseSummary(string message) { Message = message; }
         public static readonly ParseSummary Success = new ParseSummary(null);
-        public static ParseSummary TypeMismatch(string expectedTypeName, string actualInput) => new ParseSummary($"Expected input compatible with type {expectedTypeName}, got {actualInput}.");
+        public static ParseSummary TypeMismatch(string expectedTypeName, string actualInput) => new ParseSummary($"Expected input compatible with type {expectedTypeName}, got '{actualInput}'.");
     }
 
     

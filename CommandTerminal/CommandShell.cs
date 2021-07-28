@@ -96,6 +96,12 @@ namespace SomeProject.CommandTerminal
                 return;
             }
 
+            if (command.MaximumNumberOfArguments != -1 
+                && command.MaximumNumberOfArguments < Context.Arguments.Count)
+            {
+                Context.LogWarning($@"{Context.Arguments.Count - command.MaximumNumberOfArguments} extra arguments detected.");
+            }
+
             try
             {
                 command.Execute(Context);
@@ -147,6 +153,7 @@ namespace SomeProject.CommandTerminal
             Commands.Add(name, command);
         }
 
+        // TODO: clean up     
         public IEnumerable<string> GetMatchingWords(string partialWord)
         {
             // Context matches variables.
@@ -158,7 +165,9 @@ namespace SomeProject.CommandTerminal
                 {
                     yield return word;
                 }
-                yield break;
+
+                if (partialWord != "")
+                    yield break;
             }
             
             foreach (string word in Commands.Keys)
