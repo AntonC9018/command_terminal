@@ -91,10 +91,29 @@ namespace SomeProject.CommandTerminalBasics
         public static string SomeCommand(
             [Argument("pos help")]                    int positional,
             [Argument("optional", "optional help")]   string optional,
-            [Option("flag", "idk1", IsFlag = true)]   bool flag,
+            [Option("flag", "idk1", Parser = "Switch")]   bool flag,
             [Option("option", "idk2")]                string option = "44")
         {
             return $"{positional}; {optional}; {flag}; {option};";
+        }
+
+        [Parser("Switch")]
+        public static ParseSummary ParseSwitch(string input, out bool output)
+        {
+            if (string.Equals(input, "ON", System.StringComparison.OrdinalIgnoreCase))
+            {
+                output = true;
+                return ParseSummary.Success;
+            }
+            
+            if (string.Equals(input, "OFF", System.StringComparison.OrdinalIgnoreCase))
+            {
+                output = false;
+                return ParseSummary.Success;
+            }
+
+            output = false;
+            return ParseSummary.TypeMismatch("switch(bool)", input);
         }
     }
 }

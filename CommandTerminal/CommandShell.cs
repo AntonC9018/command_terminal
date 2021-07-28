@@ -63,7 +63,7 @@ namespace CommandTerminal
             Context.ParseOptions();
             if (Context.HasErrors) return;
 
-            if (Context.Options.ContainsKey(HELP))
+            if (Context.ParseFlag(HELP))
             {
                 Context.Log(command.ExtendedHelpMessage);
                 return;
@@ -77,47 +77,13 @@ namespace CommandTerminal
         private void RunCommand(CommandBase command) 
         {
             int numArguments = Context.Arguments.Count;
-            string errorMessage = null;
-            int numRequiredArguments = 0;
 
-            if (command.MinimumNumberOfArguments > 0 && numArguments == 0)
+            if (command.MinimumNumberOfArguments > 0 && numArguments == 0 && Context.Options.Count == 0)
             {
                 Context.Log(command.ExtendedHelpMessage);
                 return;
             }
 
-            if (numArguments < command.MinimumNumberOfArguments) 
-            {
-                if (command.MinimumNumberOfArguments == command.MaximumNumberOfArguments) 
-                {
-                    errorMessage = "exactly";
-                } 
-                else 
-                {
-                    errorMessage = "at least";
-                }
-                numRequiredArguments = command.MinimumNumberOfArguments;
-            } 
-            else if (command.MaximumNumberOfArguments > -1 && numArguments > command.MaximumNumberOfArguments) 
-            {
-                // Do not check max allowed number of arguments if it is -1
-                if (command.MinimumNumberOfArguments == command.MaximumNumberOfArguments) 
-                {
-                    errorMessage = "exactly";
-                } 
-                else 
-                {
-                    errorMessage = "at most";
-                }
-                numRequiredArguments = command.MaximumNumberOfArguments;
-            }
-
-            if (errorMessage != null) 
-            {
-                string pluralFix = numRequiredArguments == 1 ? "" : "s";
-                Logger.LogError($"{Context.Command} requires {errorMessage} {numRequiredArguments} argument{pluralFix}");
-                return;
-            }
             try
             {
                 command.Execute(Context);

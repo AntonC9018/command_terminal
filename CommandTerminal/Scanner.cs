@@ -81,7 +81,7 @@ namespace CommandTerminal
                 // A token must begin with a letter.
                 // Otherwise, the minus sign is included in the input (it might be a negative number).
                 _currentIndex++;
-                if (char.IsLetter(Current))
+                if (!IsEmpty && char.IsLetter(Current))
                 {
                     _currentIndex--;
                     return null;
