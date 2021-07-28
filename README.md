@@ -1,5 +1,10 @@
-Unity Command Terminal
-======================
+# This is a fork!
+
+Some / most of the functionality described below has been cut / modified / augmented / improved.
+The project is coupled with the code generator Kari, [see the main project](https://github.com/AntonC9018/a-particular-project).
+I'm not going to modifiy the rest of the readme, unless needed. The code is self-documenting and you may find example usage in this or subsidiary projects.
+
+# Unity Command Terminal
 
 A simple and highly performant in-game drop down Console.
 
