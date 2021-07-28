@@ -235,7 +235,7 @@ namespace CommandTerminal
                 return flagValue;
             }
             
-            var summary = Parsers.Parse(option, out bool result);
+            var summary = Generated.Parsers.Parse(option, out bool result);
             if (summary.IsError)
             {
                 LogError($"Error while parsing flag '{optionName}': " + summary.Message);

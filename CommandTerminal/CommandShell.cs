@@ -69,7 +69,6 @@ namespace CommandTerminal
                 return;
             }
 
-            Context.EndParsing();
             if (Context.HasErrors) return;
 
             RunCommand(command);

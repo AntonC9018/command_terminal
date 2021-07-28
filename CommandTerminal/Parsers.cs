@@ -18,37 +18,50 @@ namespace CommandTerminal
     
     public class BoolParser : IValueParser<bool>
     {
-        public ParseSummary Parse(string input, out bool value) => Parsers.Parse(input, out value);
+        public ParseSummary Parse(string input, out bool value) => Generated.Parsers.Parse(input, out value);
     }
 
-    public static partial class Parsers
+    public class StringParser : IValueParser<string>
     {
-        public static readonly BoolParser Bool = new BoolParser();
-
-        public static ParseSummary Parse(this string input, out bool result)
+        public ParseSummary Parse(string input, out string value) 
         {
-            if (string.Compare(input, "TRUE", ignoreCase: true) == 0) 
-            {
-                result = true;
-                return ParseSummary.Success;
-            }
-
-            if (string.Compare(input, "FALSE", ignoreCase: true) == 0) 
-            {
-                result = false;
-                return ParseSummary.Success;
-            }
-
-            result = default;
-            return ParseSummary.TypeMismatch("bool", input);
+            value = input;
+            return ParseSummary.Success;   
         }
+    }
 
-        // var value = context.ParseArgument(0, "MyArgument", Parsers.Bool);
-        // var option = context.ParseOption("MyOption", Parsers.Bool);
-        // var option = context.ParseOption("MyOption", true, Parsers.Bool);
-        // var flag = context.ParseFlag("MyOption", defaultValue: false, flagValue: true, Parsers.Bool); 
-        // var flag = context.ParseFlag("MyOption"); 
-        // var flag = context.ParseFlag("MyOption", defaultValue: false); 
-        // var flag = context.ParseFlag("MyOption", defaultValue: true); 
+    namespace Generated
+    {
+        public static partial class Parsers
+        {
+            public static readonly BoolParser Bool = new BoolParser();
+            public static readonly StringParser String = new StringParser();
+
+            public static ParseSummary Parse(this string input, out bool result)
+            {
+                if (string.Compare(input, "TRUE", ignoreCase: true) == 0) 
+                {
+                    result = true;
+                    return ParseSummary.Success;
+                }
+
+                if (string.Compare(input, "FALSE", ignoreCase: true) == 0) 
+                {
+                    result = false;
+                    return ParseSummary.Success;
+                }
+
+                result = default;
+                return ParseSummary.TypeMismatch("bool", input);
+            }
+
+            // var value = context.ParseArgument(0, "MyArgument", Parsers.Bool);
+            // var option = context.ParseOption("MyOption", Parsers.Bool);
+            // var option = context.ParseOption("MyOption", true, Parsers.Bool);
+            // var flag = context.ParseFlag("MyOption", defaultValue: false, flagValue: true, Parsers.Bool); 
+            // var flag = context.ParseFlag("MyOption"); 
+            // var flag = context.ParseFlag("MyOption", defaultValue: false); 
+            // var flag = context.ParseFlag("MyOption", defaultValue: true); 
+        }
     }
 }
