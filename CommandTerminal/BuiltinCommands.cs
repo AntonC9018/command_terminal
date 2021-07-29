@@ -96,7 +96,7 @@ namespace SomeProject.CommandTerminalBasics
         public static string SomeCommand(
             [Argument("pos help")]                                      int positional,
             [Argument("optional", "optional help")]                     string optional,
-            [Option("flag", "idk1", Parser = nameof(Parsers.Switch))]   bool flag,
+            [Option("flag", "idk1", Parser = nameof(Parsers.Switch), IsFlag = true)]   bool flag,
             [Option("option", "idk2")]                                  string option = "44")
         {
             return $"{positional}; {optional}; {flag}; {option};";

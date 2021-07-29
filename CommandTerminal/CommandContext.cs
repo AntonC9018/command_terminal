@@ -253,12 +253,17 @@ namespace SomeProject.CommandTerminal
 
         public T ParseOption<T>(string optionName, IValueParser<T> parser)
         {
-            if (!Options.TryGetValue(optionName, out string option))
+            if (!Options.TryRemove(optionName, out string option))
             {
                 LogError($"Missing required option '{optionName}'.");
                 return default;
             }
-            Options.Remove(optionName);
+
+            if (option == null)
+            {
+                LogError($"The option '{optionName}' cannot be used like a flag.");
+                return default;
+            }
 
             var summary = parser.Parse(option, out T result);
             if (summary.IsError)
@@ -270,11 +275,16 @@ namespace SomeProject.CommandTerminal
 
         public T ParseOption<T>(string optionName, T defaultValue, IValueParser<T> parser)
         {
-            if (!Options.TryGetValue(optionName, out string option))
+            if (!Options.TryRemove(optionName, out string option))
             {
                 return defaultValue;
             }
-            Options.Remove(optionName);
+
+            if (option == null)
+            {
+                LogError($"The option '{optionName}' cannot be used like a flag.");
+                return defaultValue;
+            }
 
             var summary = parser.Parse(option, out T result);
             if (summary.IsError)
@@ -285,13 +295,33 @@ namespace SomeProject.CommandTerminal
             return result;
         }
 
-        public bool ParseFlag(string optionName, bool defaultValue = false, bool flagValue = true)
+        public bool ParseFlag(string optionName, IValueParser<bool> parser, bool defaultValue = false, bool flagValue = true)
         {
-            if (!Options.TryGetValue(optionName, out string option))
+            if (!Options.TryRemove(optionName, out string option))
             {
                 return defaultValue;
             }
-            Options.Remove(optionName);
+
+            if (option == null)
+            {
+                return flagValue;
+            }
+            
+            var summary = parser.Parse(option, out bool result);
+            if (summary.IsError)
+            {
+                LogError($"Error while parsing flag '{optionName}': " + summary.Message);
+                return defaultValue;
+            }
+            return result;
+        }
+
+        public bool ParseFlag(string optionName, bool defaultValue = false, bool flagValue = true)
+        {
+            if (!Options.TryRemove(optionName, out string option))
+            {
+                return defaultValue;
+            }
 
             if (option == null)
             {
