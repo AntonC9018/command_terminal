@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using CommandTerminal.Generated;
 
 namespace CommandTerminal
 {
@@ -179,35 +180,7 @@ namespace CommandTerminal
             }
         }
     }
-
-    /// <summary>
-    /// Defines the data model of any reasonable command.
-    /// </summary>
-    public abstract class CommandBase
-    {
-        public abstract void Execute(CommandContext context);
-        public readonly int MinimumNumberOfArguments;
-        public readonly int MaximumNumberOfArguments; // TODO: Never used, should be removed?
-        public readonly string HelpMessage;
-        public readonly string ExtendedHelpMessage;
-
-        protected CommandBase(int minimumNumberOfArguments, int maximumNumberOfArguments, string helpMessage, string extendedHelpMessage)
-        {
-            MinimumNumberOfArguments = minimumNumberOfArguments;
-            MaximumNumberOfArguments = maximumNumberOfArguments;
-            HelpMessage = helpMessage;
-            ExtendedHelpMessage = extendedHelpMessage;
-        }
-
-        protected CommandBase(int minimumNumberOfArguments, int maximumNumberOfArguments, string helpMessage)
-        {
-            MinimumNumberOfArguments = minimumNumberOfArguments;
-            MaximumNumberOfArguments = maximumNumberOfArguments;
-            HelpMessage = helpMessage;
-            ExtendedHelpMessage = helpMessage;
-        }
-    }
-
+    
     /// <summary>
     /// Such commands should always be intercepted by the shell 
     /// and so are assumed to never be called directly.
