@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 
-namespace SomeProject.CommandTerminal
+namespace CommandTerminal
 {
     /// <summary>
     /// A helper for building text lists, e.g. the parameters of a function call like "a, b, c".

@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 
-namespace SomeProject.CommandTerminal
+namespace CommandTerminal
 {
     public class CommandShell
     {
@@ -137,7 +137,7 @@ namespace SomeProject.CommandTerminal
 
         public void RegisterCommands()
         {
-            var builtin = SomeProject.CommandTerminal.Generated.Commands.BuiltinCommands;
+            var builtin = CommandTerminal.Generated.Commands.BuiltinCommands;
             for (int i = 0; i < builtin.Length; i++)
             {
                 RegisterCommand(builtin[i].Name, builtin[i].Command);

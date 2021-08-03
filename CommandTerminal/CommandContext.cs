@@ -1,8 +1,8 @@
 
-namespace SomeProject.CommandTerminal
+namespace CommandTerminal
 {
     using System.Collections.Generic;
-    using SomeProject.Generated;
+    using CommandTerminal.Generated;
 
     /// <summary>
     /// Manages command name and argument parsing.
@@ -11,17 +11,17 @@ namespace SomeProject.CommandTerminal
     public class CommandContext
     {
         public Scanner Scanner;
-        
+
         /// <summary>
         /// The name of the currently parsed command.
         /// </summary>
         public string Command { get; set; }
-        
+
         /// <summary>
         /// The scanned arguments, as strings.
         /// </summary>
         public readonly List<string> Arguments = new List<string>();
-        
+
         /// <summary>
         /// The scanned options, as strings.
         /// </summary>
@@ -33,7 +33,7 @@ namespace SomeProject.CommandTerminal
         /// </summary>
         public readonly CaseInsensitiveDictionary<string> Variables = new CaseInsensitiveDictionary<string>();
 
-        
+
         /// <summary>
         /// The character that must appear before a string for it 
         /// to be parsed as a variable and substituted a value.
@@ -50,17 +50,17 @@ namespace SomeProject.CommandTerminal
         public CommandLogger Logger => Terminal.Logger;
         public CommandShell Shell => Terminal.Shell;
 
-        
+
         /// <summary>
         /// The types of messages emitted since the context had been last reset.
         /// </summary>
         private LogTypes _recordedMessageTypes = 0;
-        
+
         /// <summary>
         /// Whether HasErrors should be true if a warning had been logged.
         /// </summary>
-        public static bool TreatWarningsAsErrors 
-        { 
+        public static bool TreatWarningsAsErrors
+        {
             get => MessageTypesConsideredError.HasFlag(LogTypes.Warning);
             set => MessageTypesConsideredError.Set(LogTypes.Warning, value);
         }
@@ -118,7 +118,7 @@ namespace SomeProject.CommandTerminal
             return true;
         }
 
-        
+
         /// <summary>
         /// Enumerates variable names, with the variable prefix, that match the input.
         /// </summary>
@@ -131,7 +131,7 @@ namespace SomeProject.CommandTerminal
             // Return all if given an empty string
             if (partialWord.Length == 0)
             {
-                foreach (var word in Variables.Keys) 
+                foreach (var word in Variables.Keys)
                     yield return VarSubChar + word;
             }
             else if (partialWord[0] == VarSubChar)
@@ -195,8 +195,8 @@ namespace SomeProject.CommandTerminal
 
         public void LogVariables()
         {
-            var builder = new EvenTableBuilder("Name", "Value"); 
-            foreach (var kv in Variables) 
+            var builder = new EvenTableBuilder("Name", "Value");
+            foreach (var kv in Variables)
             {
                 builder.Append(column: 0, kv.Key);
                 builder.Append(column: 1, kv.Key);
@@ -209,9 +209,9 @@ namespace SomeProject.CommandTerminal
         {
             switch (number)
             {
-                case 1:  return "st";
-                case 2:  return "nd";
-                case 3:  return "rd";
+                case 1: return "st";
+                case 2: return "nd";
+                case 3: return "rd";
                 default: return "th";
             }
         }
@@ -234,7 +234,7 @@ namespace SomeProject.CommandTerminal
             }
             return Arguments[argumentIndex];
         }
-        
+
         public T ParseArgument<T>(int argumentIndex, string argumentName, IValueParser<T> parser)
         {
             if (Arguments.Count <= argumentIndex)
@@ -306,7 +306,7 @@ namespace SomeProject.CommandTerminal
             {
                 return flagValue;
             }
-            
+
             var summary = parser.Parse(option, out bool result);
             if (summary.IsError)
             {
@@ -327,7 +327,7 @@ namespace SomeProject.CommandTerminal
             {
                 return flagValue;
             }
-            
+
             var summary = Generated.Parsers.Parse(option, out bool result);
             if (summary.IsError)
             {

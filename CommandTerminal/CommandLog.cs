@@ -1,6 +1,8 @@
-namespace SomeProject.CommandTerminal
+using Kari.Plugins.Flags;
+
+namespace CommandTerminal
 {
-    [Kari.NiceFlags]
+    [NiceFlags]
     public enum LogTypes
     {
         Error     = 1 << 0,

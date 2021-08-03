@@ -1,10 +1,10 @@
 using System.Diagnostics;
-using SomeProject.CommandTerminal;
-using Kari;
-using SomeProject.CommandTerminal.Generated;
+using CommandTerminal.Generated;
 
-namespace SomeProject.CommandTerminalBasics
+namespace CommandTerminal.Basics
 {
+    using Kari.Plugins.Terminal;
+
     public static class BuiltinCommands
     {
         [FrontCommand(Help = "Clear the command console", NumberOfArguments = 0)]
@@ -96,13 +96,13 @@ namespace SomeProject.CommandTerminalBasics
         public static string SomeCommand(
             [Argument("pos help")]                                      int positional,
             [Argument("optional", "optional help")]                     string optional,
-            [Option("flag", "idk1", Parser = nameof(Parsers.Switch), IsFlag = true)]   bool flag,
+            [Option("flag", "idk1", Parser = nameof(Generated.Parsers.Switch), IsFlag = true)]   bool flag,
             [Option("option", "idk2")]                                  string option = "44")
         {
             return $"{positional}; {optional}; {flag}; {option};";
         }
 
-        [Parser("Switch")]
+        [Parser(Name = "Switch")]
         public static ParseSummary ParseSwitch(string input, out bool output)
         {
             if (string.Equals(input, "ON", System.StringComparison.OrdinalIgnoreCase))

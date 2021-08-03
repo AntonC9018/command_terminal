@@ -3,7 +3,7 @@ using System.Text;
 using System.Collections;
 using UnityEngine.Assertions;
 
-namespace SomeProject.CommandTerminal
+namespace CommandTerminal
 {
     public enum TerminalState
     {
