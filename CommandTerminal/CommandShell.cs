@@ -210,7 +210,20 @@ namespace CommandTerminal
         public readonly Action<CommandContext> _proc;
         public override void Execute(CommandContext context) => _proc(context);
 
-        public GenericCommand(int minimumNumberOfArguments, int maximumNumberOfArguments, string helpMessage, Action<CommandContext> proc) 
+        public GenericCommand(int minimumNumberOfArguments,
+            int maximumNumberOfArguments,
+            string helpMessage,
+            Action<CommandContext> proc)
+            : this(minimumNumberOfArguments, maximumNumberOfArguments, helpMessage, helpMessage, proc)
+        {
+        }
+
+        public GenericCommand(
+            int minimumNumberOfArguments,
+            int maximumNumberOfArguments,
+            string helpMessage,
+            string extendedHelp,
+            Action<CommandContext> proc) 
             : base(minimumNumberOfArguments, maximumNumberOfArguments, helpMessage)
         {
             _proc = proc;

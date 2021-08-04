@@ -92,10 +92,10 @@ namespace CommandTerminal.Basics
 
         [Command("Hello", "Some test command")]
         public static string SomeCommand(
-            [Argument("pos help")]                                       int positional,
-            [Argument("optional", "optional help")]                      string optional,
+            [Argument("pos help", Parser = "Switch")]                   bool positional,
+            [Argument("optional", "optional help")]                     string optional,
             [Option("flag", "idk1", Parser = "Switch", IsFlag = true)]  bool flag,
-            [Option("option", "idk2")]                                   string option = "44")
+            [Option("option", "idk2")]                                  string option = "44")
         {
             return $"{positional}; {optional}; {flag}; {option};";
         }

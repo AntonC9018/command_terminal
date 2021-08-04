@@ -225,79 +225,79 @@ namespace CommandTerminal
         /// <summary>
         /// Tries getting a positional argument as a string.
         /// </summary>
-        public string ParseArgument(int argumentIndex, string argumentName)
+        public string ParseArgument(int index, string name)
         {
-            if (Arguments.Count <= argumentIndex)
+            if (Arguments.Count <= index)
             {
-                LogError($"Missing {GetOrdinal(argumentIndex)} argument '{argumentName}'");
+                LogError($"Missing {GetOrdinal(index)} argument '{name}'");
                 return null;
             }
-            return Arguments[argumentIndex];
+            return Arguments[index];
         }
 
-        public T ParseArgument<T>(int argumentIndex, string argumentName, IValueParser<T> parser)
+        public T ParseArgument<T>(int index, string name, IValueParser<T> parser)
         {
-            if (Arguments.Count <= argumentIndex)
+            if (Arguments.Count <= index)
             {
-                LogError($"Missing {GetOrdinal(argumentIndex + 1)} argument '{argumentName}'");
+                LogError($"Missing {GetOrdinal(index + 1)} argument '{name}'");
                 return default;
             }
-            var argument = Arguments[argumentIndex];
+            var argument = Arguments[index];
             var summary = parser.Parse(argument, out T result);
             if (summary.IsError)
             {
-                LogError($"Error while parsing {GetOrdinal(argumentIndex + 1)} argument '{argumentName}': " + summary.Message);
+                LogError($"Error while parsing {GetOrdinal(index + 1)} argument '{name}': " + summary.Message);
             }
             return result;
         }
 
-        public T ParseOption<T>(string optionName, IValueParser<T> parser)
+        public T ParseOption<T>(string name, IValueParser<T> parser)
         {
-            if (!Options.TryRemove(optionName, out string option))
+            if (!Options.TryRemove(name, out string option))
             {
-                LogError($"Missing required option '{optionName}'.");
+                LogError($"Missing required option '{name}'.");
                 return default;
             }
 
             if (option == null)
             {
-                LogError($"The option '{optionName}' cannot be used like a flag.");
+                LogError($"The option '{name}' cannot be used like a flag.");
                 return default;
             }
 
             var summary = parser.Parse(option, out T result);
             if (summary.IsError)
             {
-                LogError($"Error while parsing option '{optionName}': " + summary.Message);
+                LogError($"Error while parsing option '{name}': " + summary.Message);
             }
             return result;
         }
 
-        public T ParseOption<T>(string optionName, T defaultValue, IValueParser<T> parser)
+        public T ParseOption<T>(string name, T defaultValue, IValueParser<T> parser)
         {
-            if (!Options.TryRemove(optionName, out string option))
+            if (!Options.TryRemove(name, out string option))
             {
                 return defaultValue;
             }
 
             if (option == null)
             {
-                LogError($"The option '{optionName}' cannot be used like a flag.");
+                LogError($"The option '{name}' cannot be used like a flag.");
                 return defaultValue;
             }
 
             var summary = parser.Parse(option, out T result);
             if (summary.IsError)
             {
-                LogError($"Error while parsing option '{optionName}': " + summary.Message);
+                LogError($"Error while parsing option '{name}': " + summary.Message);
                 return defaultValue;
             }
             return result;
         }
 
-        public bool ParseFlag(string optionName, IValueParser<bool> parser, bool defaultValue = false, bool flagValue = true)
+        public bool ParseFlag(string name, IValueParser<bool> parser, bool defaultValue = false, bool flagValue = true)
         {
-            if (!Options.TryRemove(optionName, out string option))
+            if (!Options.TryRemove(name, out string option))
             {
                 return defaultValue;
             }
@@ -310,15 +310,15 @@ namespace CommandTerminal
             var summary = parser.Parse(option, out bool result);
             if (summary.IsError)
             {
-                LogError($"Error while parsing flag '{optionName}': " + summary.Message);
+                LogError($"Error while parsing flag '{name}': " + summary.Message);
                 return defaultValue;
             }
             return result;
         }
 
-        public bool ParseFlag(string optionName, bool defaultValue = false, bool flagValue = true)
+        public bool ParseFlag(string name, bool defaultValue = false, bool flagValue = true)
         {
-            if (!Options.TryRemove(optionName, out string option))
+            if (!Options.TryRemove(name, out string option))
             {
                 return defaultValue;
             }
@@ -331,7 +331,7 @@ namespace CommandTerminal
             var summary = Generated.Parsers.Parse(option, out bool result);
             if (summary.IsError)
             {
-                LogError($"Error while parsing flag '{optionName}': " + summary.Message);
+                LogError($"Error while parsing flag '{name}': " + summary.Message);
                 return defaultValue;
             }
             return result;
