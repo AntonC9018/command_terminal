@@ -97,10 +97,14 @@ namespace CommandTerminal
                 return;
             }
 
-            if (command.MaximumNumberOfArguments != -1 
-                && command.MaximumNumberOfArguments < Context.Arguments.Count)
+
+            if (command.MaximumNumberOfArguments != -1)
             {
-                Context.LogWarning($@"{Context.Arguments.Count - command.MaximumNumberOfArguments} extra arguments detected.");
+                for (int i = command.MaximumNumberOfArguments; i < Context.Arguments.Count; i++)
+                {
+                    var extraArgument = Context.Arguments[i];
+                    Context.LogWarning($"Extra argument '{extraArgument}' at position {i}.");
+                }
             }
 
             try
@@ -113,6 +117,7 @@ namespace CommandTerminal
                 // We lose info on stack trace here. 
                 // Ideally, it should be logged in a special way, with a tree view or something.
                 Logger.LogError(exception.Message);
+                Logger.LogError(exception.StackTrace);
             }
         }
 

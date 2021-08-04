@@ -92,15 +92,20 @@ namespace CommandTerminal.Basics
 
         [Command("Hello", "Some test command")]
         public static string SomeCommand(
-            [Argument("pos help")]                                      int positional,
-            [Argument("optional", "optional help")]                     string optional,
+            [Argument("pos help")]                                       int positional,
+            [Argument("optional", "optional help")]                      string optional,
             [Option("flag", "idk1", Parser = "Switch", IsFlag = true)]  bool flag,
-            [Option("option", "idk2")]                                  string option = "44")
+            [Option("option", "idk2")]                                   string option = "44")
         {
             return $"{positional}; {optional}; {flag}; {option};";
         }
 
-        [Parser("Switch")]
+        // Self-reference is a nice technique here.
+        // The code generator is able to infer that `nameof(Parsers.Switch)` evaluates to "Switch"
+        // even if the corresponding symbol does not exist.
+        // This really is extra: you don't really need that, since the code generator gives you errors 
+        // if it finds a reference to a non-existent parser.
+        [Parser(nameof(Parsers.Switch))]
         public static ParseSummary ParseSwitch(string input, out bool output)
         {
             if (string.Equals(input, "ON", System.StringComparison.OrdinalIgnoreCase))
