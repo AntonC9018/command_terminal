@@ -40,7 +40,7 @@ Command Terminal is based on [an implementation by Jonathan Blow](https://youtu.
 
 ## Usage
 
-The console window can be toggled with a hotkey (default is backtick), and another hotkey can be used to toggle the full size window (default is shift+backtick).
+The console window can be toggled with a hotkey (default is \`), and another hotkey can be used to toggle the full size window (default is ctrl+\`).
 
 Enter `help` in the console to view all available commands, use the up and down arrow keys to traverse the command history, and the tab key to autocomplete commands. Typing in `command_name -help` would also give the help info for `command_name`.
 

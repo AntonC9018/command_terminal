@@ -28,7 +28,7 @@ namespace CommandTerminal
         float ToggleSpeed = 360;
 
         [SerializeField] string ToggleHotkey = "`";
-        [SerializeField] string ToggleFullHotkey = "#`";
+        [SerializeField] string ToggleFullHotkey = "^`"; // https://docs.unity3d.com/ScriptReference/Event.KeyboardEvent.html
         [SerializeField] int BufferSize = 512;
 
         [Header("Input")]
@@ -312,11 +312,8 @@ namespace CommandTerminal
                 input_fix = false;                  // Prevents checking string Length every draw call
             }
 
-            if (initial_open)
-            {
-                GUI.FocusControl("command_text_field");
-                initial_open = false;
-            }
+            // Always keep the focus
+            GUI.FocusControl("command_text_field");
 
             if (ShowGUIButtons && GUILayout.Button("| run", input_style, GUILayout.Width(Screen.width / 10)))
             {
