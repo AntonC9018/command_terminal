@@ -1,4 +1,5 @@
 {
 	"name": "CommandTerminal",
+    "rootNamespace": "CommandTerminal",
 	"references": [ "Common" ]
 }
