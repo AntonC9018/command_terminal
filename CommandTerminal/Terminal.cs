@@ -242,7 +242,12 @@ namespace CommandTerminal
         {
             GUILayout.BeginVertical();
 
-            scroll_position = GUILayout.BeginScrollView(scroll_position, false, false, GUIStyle.none, GUIStyle.none);
+            scroll_position = GUILayout.BeginScrollView(scroll_position, 
+                alwaysShowHorizontal:   false, 
+                alwaysShowVertical:     false, 
+                horizontalScrollbar:    GUIStyle.none, 
+                verticalScrollbar:      GUIStyle.none);
+
             GUILayout.FlexibleSpace();
             DrawLogs();
             GUILayout.EndScrollView();
@@ -251,11 +256,6 @@ namespace CommandTerminal
             {
                 CursorToEnd();
                 move_cursor = false;
-            }
-
-            if (Autocomplete.FullMatch != command_text)
-            {
-                Autocomplete.Reset();
             }
 
             if (Event.current.Equals(Event.KeyboardEvent("escape")))
@@ -301,6 +301,11 @@ namespace CommandTerminal
             GUI.SetNextControlName("command_text_field");
             command_text = GUILayout.TextField(command_text, input_style);
 
+            if (GUI.changed)
+            {
+                Autocomplete.Reset();
+            }
+
             if (input_fix && command_text.Length > 0)
             {
                 command_text = cached_command_text; // Otherwise the TextField picks up the ToggleHotkey character event
@@ -324,10 +329,19 @@ namespace CommandTerminal
 
         void DrawLogs()
         {
-            foreach (var log in Logger)
+            var ev = Event.current;
+
+            for (int i = 0; i < Logger.Count; i++)
             {
+                var log = Logger[i];
                 label_style.normal.textColor = GetLogColor(log.Type);
                 GUILayout.Label(log.String, label_style);
+
+                var lastRect = GUILayoutUtility.GetLastRect();
+                if (lastRect.Contains(ev.mousePosition) && ev.type == EventType.MouseUp)
+                {
+                    GUIUtility.systemCopyBuffer = log.String;
+                }
             }
         }
 

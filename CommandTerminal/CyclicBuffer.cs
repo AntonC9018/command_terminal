@@ -28,7 +28,7 @@ namespace CommandTerminal
 #endif
         }
 
-        private int MapIndex(int index) => (index + _currentIndex + _count - 1) % Capacity;
+        private int MapIndex(int index) => (index + _currentIndex - _count + 1) % Capacity;
 
         public T this[int index]
         {
