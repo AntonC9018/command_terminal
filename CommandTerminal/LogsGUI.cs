@@ -13,11 +13,6 @@ namespace CommandTerminal
             public int charIndex;
             public float Y => position.y;
             public float X => position.x;
-
-            public void Reset()
-            {
-                index = -1;
-            }
         }
 
         public struct CopiedTooltipInfo
@@ -33,11 +28,6 @@ namespace CommandTerminal
 
             public static CopiedTooltipInfo Copied(int i) => new CopiedTooltipInfo(i, "Copied");
             public static CopiedTooltipInfo Aborted(int i) => new CopiedTooltipInfo(i, "Aborted");
-
-            public void Reset()
-            {
-                index = -1;
-            }
 
             public string GetTooltip(int i)
             {
@@ -67,8 +57,8 @@ namespace CommandTerminal
         {
             _logger = logger;
             _theme = theme;
-            _start.Reset();
-            _copied.Reset();
+            _start.index = -1;
+            _copied.index = -1;
 
             _labelStyle = new GUIStyle();
             _labelStyle.font = theme.ConsoleFont;
@@ -192,7 +182,7 @@ namespace CommandTerminal
             }
             else if (i == _copied.index && !rect.Contains(Event.current.mousePosition))
             {
-                _copied.Reset();
+                _copied.index = -1;
             }
         }
 
@@ -293,7 +283,7 @@ namespace CommandTerminal
                         _copied = CopiedTooltipInfo.Aborted(_end.index);
                     }
                     
-                    _start.Reset();
+                    _start.index = -1;
                     return;
                 }
 
