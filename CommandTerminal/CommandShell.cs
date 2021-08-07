@@ -144,6 +144,7 @@ namespace CommandTerminal
         public void RegisterCommands()
         {
             var builtin = CommandTerminal.Generated.Commands.BuiltinCommands;
+            if (builtin is null) return;
             for (int i = 0; i < builtin.Length; i++)
             {
                 RegisterCommand(builtin[i].Name, builtin[i].Command);

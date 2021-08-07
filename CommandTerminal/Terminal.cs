@@ -1,7 +1,6 @@
 using UnityEngine;
-using System.Text;
-using System.Collections;
 using UnityEngine.Assertions;
+using System;
 
 namespace CommandTerminal
 {
@@ -10,6 +9,23 @@ namespace CommandTerminal
         Close,
         OpenSmall,
         OpenFull
+    }
+
+    [Serializable]
+    public class TerminalThemeConfiguration
+    {
+        [Range(0, 1)]
+        public float InputContrast = 0.0f;
+        [Range(0, 1)]
+        public float InputAlpha = 0.5f;
+        public Font ConsoleFont = null;
+        public Color BackgroundColor = Color.black;
+        public Color ForegroundColor = Color.white;
+        public Color ShellColor = Color.white;
+        public Color InputColor = Color.cyan;
+        public Color WarningColor = Color.yellow;
+        public Color SelectionColor = Color.yellow;
+        public Color ErrorColor = Color.red;
     }
 
     public class Terminal : MonoBehaviour
@@ -32,23 +48,11 @@ namespace CommandTerminal
         [SerializeField] int BufferSize = 512;
 
         [Header("Input")]
-        [SerializeField] Font ConsoleFont;
         [SerializeField] string InputCaret = ">";
         [SerializeField] bool ShowGUIButtons = false;
         [SerializeField] bool RightAlignButtons = false;
 
-        [Header("Theme")]
-        [Range(0, 1)]
-        [SerializeField] float InputContrast = 0.0f;
-        [Range(0, 1)]
-        [SerializeField] float InputAlpha = 0.5f;
-
-        [SerializeField] Color BackgroundColor = Color.black;
-        [SerializeField] Color ForegroundColor = Color.white;
-        [SerializeField] Color ShellColor = Color.white;
-        [SerializeField] Color InputColor = Color.cyan;
-        [SerializeField] Color WarningColor = Color.yellow;
-        [SerializeField] Color ErrorColor = Color.red;
+        [SerializeField] TerminalThemeConfiguration Theme;
 
         TerminalState state;
         TextEditor editor_state;
@@ -63,7 +67,6 @@ namespace CommandTerminal
         string cached_command_text;
         Vector2 scroll_position;
         GUIStyle window_style;
-        GUIStyle label_style;
         GUIStyle input_style;
         Texture2D background_texture;
         Texture2D input_background_texture;
@@ -72,7 +75,7 @@ namespace CommandTerminal
         public CommandShell Shell { get; private set; }
         public CommandHistory History { get; private set; }
         public CommandAutocomplete Autocomplete { get; private set; }
-        public bool IssuedError => Shell.Context.HasErrors;
+        private LogsGUI _logs;
 
         public bool IsClosed
         {
@@ -151,9 +154,9 @@ namespace CommandTerminal
 
         void Start()
         {
-            if (ConsoleFont == null)
+            if (Theme.ConsoleFont == null)
             {
-                ConsoleFont = Font.CreateDynamicFontFromOSFont("Courier New", 16);
+                Theme.ConsoleFont = Font.CreateDynamicFontFromOSFont("Courier New", 16);
                 Debug.LogWarning("Command Console Warning: Please assign a font.");
             }
 
@@ -198,39 +201,37 @@ namespace CommandTerminal
             real_window_size = Screen.height * MaxHeight / 3;
             window = new Rect(0, current_open_t - real_window_size, Screen.width, real_window_size);
 
+            _logs = new LogsGUI(Logger, Theme);
+
             // Set background color
             background_texture = new Texture2D(1, 1);
-            background_texture.SetPixel(0, 0, BackgroundColor);
+            background_texture.SetPixel(0, 0, Theme.BackgroundColor);
             background_texture.Apply();
 
             window_style = new GUIStyle();
             window_style.normal.background = background_texture;
             window_style.padding = new RectOffset(4, 4, 4, 4);
-            window_style.normal.textColor = ForegroundColor;
-            window_style.font = ConsoleFont;
+            window_style.normal.textColor = Theme.ForegroundColor;
+            window_style.font = Theme.ConsoleFont;
         }
 
         void SetupLabels()
         {
-            label_style = new GUIStyle();
-            label_style.font = ConsoleFont;
-            label_style.normal.textColor = ForegroundColor;
-            label_style.wordWrap = true;
         }
 
         void SetupInput()
         {
             input_style = new GUIStyle();
             input_style.padding = new RectOffset(4, 4, 4, 4);
-            input_style.font = ConsoleFont;
-            input_style.fixedHeight = ConsoleFont.fontSize * 1.6f;
-            input_style.normal.textColor = InputColor;
+            input_style.font = Theme.ConsoleFont;
+            input_style.fixedHeight = Theme.ConsoleFont.fontSize * 1.6f;
+            input_style.normal.textColor = Theme.InputColor;
 
             var dark_background = new Color();
-            dark_background.r = BackgroundColor.r - InputContrast;
-            dark_background.g = BackgroundColor.g - InputContrast;
-            dark_background.b = BackgroundColor.b - InputContrast;
-            dark_background.a = InputAlpha;
+            dark_background.r = Theme.BackgroundColor.r - Theme.InputContrast;
+            dark_background.g = Theme.BackgroundColor.g - Theme.InputContrast;
+            dark_background.b = Theme.BackgroundColor.b - Theme.InputContrast;
+            dark_background.a = Theme.InputAlpha;
 
             input_background_texture = new Texture2D(1, 1);
             input_background_texture.SetPixel(0, 0, dark_background);
@@ -249,7 +250,7 @@ namespace CommandTerminal
                 verticalScrollbar:      GUIStyle.none);
 
             GUILayout.FlexibleSpace();
-            DrawLogs();
+            _logs.DoGUI();
             GUILayout.EndScrollView();
 
             if (move_cursor)
@@ -292,14 +293,20 @@ namespace CommandTerminal
             }
 
             GUILayout.BeginHorizontal();
-
+            GUILayout.BeginHorizontal();
+            input_style.alignment = TextAnchor.MiddleLeft;
             if (InputCaret != "")
             {
-                GUILayout.Label(InputCaret, input_style, GUILayout.Width(ConsoleFont.fontSize));
+                GUILayout.Label(InputCaret, input_style, GUILayout.Width(Theme.ConsoleFont.fontSize));
             }
 
             GUI.SetNextControlName("command_text_field");
-            command_text = GUILayout.TextField(command_text, input_style);
+            command_text = GUILayout.TextField(command_text, input_style,
+                // Somehow this kinda does what I want it to do.
+                // To be precise, it prevents the text pushing the tooltip into oblivion.
+                GUILayout.MaxWidth(2));
+            // Always keep the focus
+            GUI.FocusControl("command_text_field");
 
             if (GUI.changed)
             {
@@ -312,39 +319,19 @@ namespace CommandTerminal
                 input_fix = false;                  // Prevents checking string Length every draw call
             }
 
-            // Always keep the focus
-            GUI.FocusControl("command_text_field");
+            GUILayout.EndHorizontal();
 
-            if (ShowGUIButtons && GUILayout.Button("| run", input_style, GUILayout.Width(Screen.width / 10)))
-            {
-                EnterCommand();
-            }
+            // I could also just fix it the to bottom right corner, now that I think about it.
+            input_style.alignment = TextAnchor.MiddleRight;
+            GUILayout.Label(GUI.tooltip, input_style);
 
             GUILayout.EndHorizontal();
             GUILayout.EndVertical();
         }
 
-        void DrawLogs()
-        {
-            var ev = Event.current;
-
-            for (int i = 0; i < Logger.Count; i++)
-            {
-                var log = Logger[i];
-                label_style.normal.textColor = GetLogColor(log.Type);
-                GUILayout.Label(log.String, label_style);
-
-                var lastRect = GUILayoutUtility.GetLastRect();
-                if (lastRect.Contains(ev.mousePosition) && ev.type == EventType.MouseUp)
-                {
-                    GUIUtility.systemCopyBuffer = log.String;
-                }
-            }
-        }
-
         void DrawGUIButtons()
         {
-            int size = ConsoleFont.fontSize;
+            int size = Theme.ConsoleFont.fontSize;
             float x_position = RightAlignButtons ? Screen.width - 7 * size : 0;
 
             // 7 is the number of chars in the button plus some padding, 2 is the line height.
@@ -452,18 +439,6 @@ namespace CommandTerminal
         {
             Logger.Log(message, MapLogType(type));
             scroll_position.y = int.MaxValue;
-        }
-
-        Color GetLogColor(LogTypes type)
-        {
-            switch (type)
-            {
-                case LogTypes.Message:      return ForegroundColor;
-                case LogTypes.Warning:      return WarningColor;
-                case LogTypes.Input:        return InputColor;
-                case LogTypes.ShellMessage: return ShellColor;
-                default:                    return ErrorColor;
-            }
         }
     }
 }
