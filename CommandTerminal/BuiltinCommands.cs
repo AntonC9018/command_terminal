@@ -5,14 +5,27 @@ namespace CommandTerminal.Basics
 {
     public static class BuiltinCommands
     {
-        [FrontCommand(Help = "Clear the command console", NumberOfArguments = 0)]
+        /// <summary>
+        /// Clear the command console.
+        /// </summary>
+        [FrontCommand(NumberOfArguments = 0)]
         public static void Clear(CommandContext context) 
         {
             context.Logger.Clear();
         }
 
-        [FrontCommand(Help = "List all variables or set a variable value", 
-            MinimumNumberOfArguments = 0, MaximumNumberOfArguments = 2)]
+        /// <summary>
+        /// List all variables or set a variable value.
+        /// `set  x  5`  sets the variable x to value 5.
+        /// The value can be read back by doing `set x` or `log x`.
+        /// </summary>
+        /// <remarks>
+        /// Do not put a $ in front of the variable name.
+        /// The prefixed variable name in this case will be substituted with the value of the variable
+        /// and a new variable with that name will be set to the value. Simply put:
+        /// `set x y` and then `set $x z` will set `x` to "y" and `y` to "z". 
+        /// </remarks>
+        [FrontCommand(MinimumNumberOfArguments = 0, MaximumNumberOfArguments = 2)]
         public static void Set(CommandContext context) 
         {
             if (context.Arguments.Count == 0)
@@ -40,8 +53,11 @@ namespace CommandTerminal.Basics
             context.Variables[name] = value;
         }
 
-        [FrontCommand(Help = "Logs help for a command",
-            MinimumNumberOfArguments = 0, MaximumNumberOfArguments = 1)]
+        /// <summary>
+        /// Logs help for a command.
+        /// Internally calls to Shell.LogHelpForCommand().
+        /// </summary>
+        [FrontCommand(MinimumNumberOfArguments = 0, MaximumNumberOfArguments = 1)]
         public static void Help(CommandContext context)
         {
             if (context.Arguments.Count == 0)
@@ -83,14 +99,21 @@ namespace CommandTerminal.Basics
                 context.Log(argumentToLog);
         }
 
-        [Command(Name = "Test", Help = "Prints something")]
-        public static void PrintSomething(int i, int b)
+        [FrontCommand(Help = "Quit the game")]
+        public static void Quit(CommandContext context)
         {
-            UnityEngine.Debug.Log(i);
-            UnityEngine.Debug.Log(b);
+        #if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+        #else
+            Application.Quit();
+        #endif
         }
 
-        [Command("Hello", "Some test command")]
+        /// <summary>
+        /// A test, sandbox command made to illustrate the features of the system.
+        /// Feel free to experiment with this command.
+        /// </summary>
+        [Command(Name = "Hello")]
         public static string SomeCommand(
             [Argument("pos help", Parser = "Switch")]                   bool positional,
             [Argument("optional", "optional help")]                     string optional,

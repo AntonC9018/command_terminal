@@ -277,6 +277,7 @@ namespace CommandTerminal
             else if (Event.current.Equals(Event.KeyboardEvent("down")))
             {
                 command_text = History.Next();
+                move_cursor = true;
             }
             else if (Event.current.Equals(Event.KeyboardEvent(ToggleHotkey)))
             {
