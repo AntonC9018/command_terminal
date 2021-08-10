@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using CommandTerminal.Generated;
 using Kari.Plugins.Terminal;
+using UnityEngine;
+
 namespace CommandTerminal.Basics
 {
     public static class BuiltinCommands
