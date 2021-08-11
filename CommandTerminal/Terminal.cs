@@ -55,7 +55,6 @@ namespace CommandTerminal
         [SerializeField] TerminalThemeConfiguration Theme;
 
         TerminalState state;
-        TextEditor editor_state;
         bool input_fix;
         bool move_cursor;
         bool initial_open; // Used to focus on TextField when console opens
@@ -268,10 +267,12 @@ namespace CommandTerminal
               || Event.current.Equals(Event.KeyboardEvent("[enter]")))
             {
                 EnterCommand();
+                Autocomplete.Reset();
             }
             else if (Event.current.Equals(Event.KeyboardEvent("up")))
             {
                 command_text = History.Previous();
+                CursorToEnd();
                 move_cursor = true;
             }
             else if (Event.current.Equals(Event.KeyboardEvent("down")))
@@ -306,6 +307,7 @@ namespace CommandTerminal
                 // Somehow this kinda does what I want it to do.
                 // To be precise, it prevents the text pushing the tooltip into oblivion.
                 GUILayout.MaxWidth(2));
+            
             // Always keep the focus
             GUI.FocusControl("command_text_field");
 
@@ -415,12 +417,9 @@ namespace CommandTerminal
 
         void CursorToEnd()
         {
-            if (editor_state == null)
-            {
-                editor_state = (TextEditor)GUIUtility.GetStateObject(typeof(TextEditor), GUIUtility.keyboardControl);
-            }
-
-            editor_state.MoveCursorToPosition(new Vector2(999, 999));
+            var editor = (TextEditor) GUIUtility.GetStateObject(typeof(TextEditor), GUIUtility.keyboardControl);
+            editor.selectIndex = command_text.Length + 1;
+            editor.cursorIndex = command_text.Length + 1;
         }
 
         LogTypes MapLogType(UnityEngine.LogType type)

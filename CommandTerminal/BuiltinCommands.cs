@@ -72,7 +72,7 @@ namespace CommandTerminal.Basics
             context.Shell.LogHelpForCommand(commandName);
         }
 
-        [FrontCommand(Help = "Logs the time a command takes to execute", MinimumNumberOfArguments = 1)]
+        [FrontCommand(Help = "Logs the time a command takes to execute.", MinimumNumberOfArguments = 1)]
         public static void Time(CommandContext context)
         {
             var commandName = context.ParseArgument(0, "command");
@@ -88,12 +88,12 @@ namespace CommandTerminal.Basics
             context.Log($"The command {commandName} took {s.ElapsedMilliseconds} ms.");
         }
 
-        [FrontCommand(Help = "No operation", NumberOfArguments = 0)]
+        [FrontCommand(Help = "No operation.", NumberOfArguments = 0)]
         public static void Noop(CommandContext context) 
         { 
         }
 
-        [FrontCommand(Help = "Logs the only argument, evaluating variables", NumberOfArguments = 1)]
+        [FrontCommand(Help = "Logs the only argument, evaluating variables.", NumberOfArguments = 1)]
         public static void Log(CommandContext context)
         {
             var argumentToLog = context.ParseArgument(0, "argumentToLog");
@@ -101,7 +101,7 @@ namespace CommandTerminal.Basics
                 context.Log(argumentToLog);
         }
 
-        [FrontCommand(Help = "Quit the game")]
+        [FrontCommand(Help = "Quit the game.")]
         public static void Quit(CommandContext context)
         {
         #if UNITY_EDITOR
