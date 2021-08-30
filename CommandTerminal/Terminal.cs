@@ -10,50 +10,11 @@ namespace CommandTerminal
         OpenSmall,
         OpenFull
     }
-
-    [Serializable]
-    public class TerminalThemeConfiguration
-    {
-        [Range(0, 1)]
-        public float InputContrast = 0.0f;
-        [Range(0, 1)]
-        public float InputAlpha = 0.5f;
-        public Font ConsoleFont = null;
-        public Color BackgroundColor = Color.black;
-        public Color ForegroundColor = Color.white;
-        public Color ShellColor = Color.white;
-        public Color InputColor = Color.cyan;
-        public Color WarningColor = Color.yellow;
-        public Color SelectionColor = Color.yellow;
-        public Color ErrorColor = Color.red;
-    }
-
+    
     public class Terminal : MonoBehaviour
     {
-        [Header("Window")]
-        [Range(0, 1)]
-        [SerializeField]
-        float MaxHeight = 0.7f;
-
-        [SerializeField]
-        [Range(0, 1)]
-        float SmallTerminalRatio = 0.33f;
-
-        [Range(100, 3000)]
-        [SerializeField]
-        float ToggleSpeed = 360;
-
-        [SerializeField] string ToggleHotkey = "`";
-        [SerializeField] string ToggleFullHotkey = "^`"; // https://docs.unity3d.com/ScriptReference/Event.KeyboardEvent.html
-        [SerializeField] int BufferSize = 512;
-
-        [Header("Input")]
-        [SerializeField] string InputCaret = ">";
-        [SerializeField] bool ShowGUIButtons = false;
-        [SerializeField] bool RightAlignButtons = false;
-
-        [SerializeField] TerminalThemeConfiguration Theme;
-
+        private TerminalSettings _settings;
+        
         TerminalState state;
         bool input_fix;
         bool move_cursor;
@@ -96,7 +57,7 @@ namespace CommandTerminal
                     }
                 case TerminalState.OpenSmall:
                     {
-                        open_target = Screen.height * MaxHeight * SmallTerminalRatio;
+                        open_target = Screen.height * _settings.MaxHeight * _settings.SmallTerminalRatio;
                         if (current_open_t > open_target)
                         {
                             // Prevent resizing from OpenFull to OpenSmall if window y position
@@ -112,7 +73,7 @@ namespace CommandTerminal
                 case TerminalState.OpenFull:
                 default:
                     {
-                        real_window_size = Screen.height * MaxHeight;
+                        real_window_size = Screen.height * _settings.MaxHeight;
                         open_target = real_window_size;
                         break;
                     }
@@ -135,11 +96,12 @@ namespace CommandTerminal
 
         void OnEnable()
         {
-            Logger = new CommandLogger(BufferSize);
+            _settings = TerminalSettings.instance;
+            Logger = new CommandLogger(_settings.BufferSize);
             Shell = new CommandShell(this);
             History = new CommandHistory();
             Autocomplete = new CommandAutocomplete(Shell);
-
+            
             Shell.RegisterCommands();
 
             // Hook Unity log events
@@ -153,15 +115,15 @@ namespace CommandTerminal
 
         void Start()
         {
-            if (Theme.ConsoleFont == null)
+            if (_settings.Theme.ConsoleFont == null)
             {
-                Theme.ConsoleFont = Font.CreateDynamicFontFromOSFont("Courier New", 16);
+                _settings.Theme.ConsoleFont = Font.CreateDynamicFontFromOSFont("Courier New", 16);
                 Debug.LogWarning("Command Console Warning: Please assign a font.");
             }
 
             command_text = "";
             cached_command_text = command_text;
-            Assert.AreNotEqual(ToggleHotkey.ToLower(), "return", "Return is not a valid ToggleHotkey");
+            Assert.AreNotEqual(_settings.ToggleHotkey.ToLower(), "return", "Return is not a valid _settings.ToggleHotkey");
 
             SetupWindow();
             SetupInput();
@@ -170,18 +132,18 @@ namespace CommandTerminal
 
         void OnGUI()
         {
-            if (Event.current.Equals(Event.KeyboardEvent(ToggleHotkey)))
+            if (Event.current.Equals(Event.KeyboardEvent(_settings.ToggleHotkey)))
             {
                 SetState(TerminalState.OpenSmall);
                 initial_open = true;
             }
-            else if (Event.current.Equals(Event.KeyboardEvent(ToggleFullHotkey)))
+            else if (Event.current.Equals(Event.KeyboardEvent(_settings.ToggleFullHotkey)))
             {
                 SetState(TerminalState.OpenFull);
                 initial_open = true;
             }
 
-            if (ShowGUIButtons)
+            if (_settings.ShowGUIButtons)
             {
                 DrawGUIButtons();
             }
@@ -197,21 +159,21 @@ namespace CommandTerminal
 
         void SetupWindow()
         {
-            real_window_size = Screen.height * MaxHeight / 3;
+            real_window_size = Screen.height * _settings.MaxHeight / 3;
             window = new Rect(0, current_open_t - real_window_size, Screen.width, real_window_size);
 
-            _logs = new LogsGUI(Logger, Theme);
+            _logs = new LogsGUI(Logger, _settings.Theme);
 
             // Set background color
             background_texture = new Texture2D(1, 1);
-            background_texture.SetPixel(0, 0, Theme.BackgroundColor);
+            background_texture.SetPixel(0, 0, _settings.Theme.BackgroundColor);
             background_texture.Apply();
 
             window_style = new GUIStyle();
             window_style.normal.background = background_texture;
             window_style.padding = new RectOffset(4, 4, 4, 4);
-            window_style.normal.textColor = Theme.ForegroundColor;
-            window_style.font = Theme.ConsoleFont;
+            window_style.normal.textColor = _settings.Theme.ForegroundColor;
+            window_style.font = _settings.Theme.ConsoleFont;
         }
 
         void SetupLabels()
@@ -222,15 +184,15 @@ namespace CommandTerminal
         {
             input_style = new GUIStyle();
             input_style.padding = new RectOffset(4, 4, 4, 4);
-            input_style.font = Theme.ConsoleFont;
-            input_style.fixedHeight = Theme.ConsoleFont.fontSize * 1.6f;
-            input_style.normal.textColor = Theme.InputColor;
+            input_style.font = _settings.Theme.ConsoleFont;
+            input_style.fixedHeight = _settings.Theme.ConsoleFont.fontSize * 1.6f;
+            input_style.normal.textColor = _settings.Theme.InputColor;
 
             var dark_background = new Color();
-            dark_background.r = Theme.BackgroundColor.r - Theme.InputContrast;
-            dark_background.g = Theme.BackgroundColor.g - Theme.InputContrast;
-            dark_background.b = Theme.BackgroundColor.b - Theme.InputContrast;
-            dark_background.a = Theme.InputAlpha;
+            dark_background.r = _settings.Theme.BackgroundColor.r - _settings.Theme.InputContrast;
+            dark_background.g = _settings.Theme.BackgroundColor.g - _settings.Theme.InputContrast;
+            dark_background.b = _settings.Theme.BackgroundColor.b - _settings.Theme.InputContrast;
+            dark_background.a = _settings.Theme.InputAlpha;
 
             input_background_texture = new Texture2D(1, 1);
             input_background_texture.SetPixel(0, 0, dark_background);
@@ -280,11 +242,11 @@ namespace CommandTerminal
                 command_text = History.Next();
                 move_cursor = true;
             }
-            else if (Event.current.Equals(Event.KeyboardEvent(ToggleHotkey)))
+            else if (Event.current.Equals(Event.KeyboardEvent(_settings.ToggleHotkey)))
             {
                 ToggleState(TerminalState.OpenSmall);
             }
-            else if (Event.current.Equals(Event.KeyboardEvent(ToggleFullHotkey)))
+            else if (Event.current.Equals(Event.KeyboardEvent(_settings.ToggleFullHotkey)))
             {
                 ToggleState(TerminalState.OpenFull);
             }
@@ -297,9 +259,9 @@ namespace CommandTerminal
             GUILayout.BeginHorizontal();
             GUILayout.BeginHorizontal();
             input_style.alignment = TextAnchor.MiddleLeft;
-            if (InputCaret != "")
+            if (_settings.InputCaret != "")
             {
-                GUILayout.Label(InputCaret, input_style, GUILayout.Width(Theme.ConsoleFont.fontSize));
+                GUILayout.Label(_settings.InputCaret, input_style, GUILayout.Width(_settings.Theme.ConsoleFont.fontSize));
             }
 
             GUI.SetNextControlName("command_text_field");
@@ -318,7 +280,7 @@ namespace CommandTerminal
 
             if (input_fix && command_text.Length > 0)
             {
-                command_text = cached_command_text; // Otherwise the TextField picks up the ToggleHotkey character event
+                command_text = cached_command_text; // Otherwise the TextField picks up the _settings.ToggleHotkey character event
                 input_fix = false;                  // Prevents checking string Length every draw call
             }
 
@@ -334,8 +296,8 @@ namespace CommandTerminal
 
         void DrawGUIButtons()
         {
-            int size = Theme.ConsoleFont.fontSize;
-            float x_position = RightAlignButtons ? Screen.width - 7 * size : 0;
+            int size = _settings.Theme.ConsoleFont.fontSize;
+            float x_position = _settings.RightAlignButtons ? Screen.width - 7 * size : 0;
 
             // 7 is the number of chars in the button plus some padding, 2 is the line height.
             // The layout will resize according to the font size.
@@ -357,7 +319,7 @@ namespace CommandTerminal
 
         void HandleOpenness()
         {
-            float dt = ToggleSpeed * Time.unscaledDeltaTime;
+            float dt = _settings.ToggleSpeed * Time.unscaledDeltaTime;
 
             if (current_open_t < open_target)
             {

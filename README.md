@@ -5,6 +5,8 @@ The project is coupled with the code generator Kari, [see the main project](http
 
 `Kari` will eventually become stand-alone, faster, if people want to use this fork.
 
+Additionally, it requires our [Hextant Utilities fork](https://github.com/AntonC9018/com.hextantstudios.utilities) for saving custom terminal configs. 
+
 # Unity Command Terminal
 
 A simple and highly performant in-game drop down Console.
