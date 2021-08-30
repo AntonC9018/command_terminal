@@ -1,0 +1,20 @@
+{
+    "name": "CommandTerminal.Editor",
+    "rootNamespace": "CommandTerminal.Editor",
+    "references": [
+        "GUID:6ec20d7bf46e38347a93da7ecf751332",
+        "GUID:5cb2ec59697a4f9438a8f30dc412b4a9",
+        "GUID:586a67ac94eadef47991ab1b77d40699"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
