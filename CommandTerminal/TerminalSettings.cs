@@ -1,6 +1,8 @@
 using System;
 using UnityEngine;
 using Hextant;
+using Hextant.Editor;
+using UnityEditor;
 
 namespace CommandTerminal
 {
@@ -32,6 +34,13 @@ namespace CommandTerminal
         // [SettingsProvider]
         // static SettingsProvider GetSettingsProvider() =>
         //     instance.GetSettingsProvider();
+        
+        
+#if UNITY_EDITOR
+        [SettingsProvider]
+        static SettingsProvider GetSettingsProvider() => 
+            instance.GetSettingsProvider();
+#endif
     }
     
     [Serializable]

@@ -4,7 +4,8 @@
     "references": [
         "Common",
         "TerminalSettings.Runtime",
-        "com.hextantstudios.utilities"
+        "com.hextantstudios.utilities",
+        "Hextant Utilities"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
