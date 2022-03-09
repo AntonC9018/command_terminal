@@ -18,7 +18,6 @@ namespace CommandTerminal
         TerminalState state;
         bool input_fix;
         bool move_cursor;
-        bool initial_open; // Used to focus on TextField when console opens
         Rect window;
         float current_open_t;
         float open_target;
@@ -51,32 +50,34 @@ namespace CommandTerminal
             switch (new_state)
             {
                 case TerminalState.Close:
-                    {
-                        open_target = 0;
-                        break;
-                    }
+                {
+                    open_target = 0;
+                    break;
+                }
+                
                 case TerminalState.OpenSmall:
+                {
+                    open_target = Screen.height * _settings.MaxHeight * _settings.SmallTerminalRatio;
+                    if (current_open_t > open_target)
                     {
-                        open_target = Screen.height * _settings.MaxHeight * _settings.SmallTerminalRatio;
-                        if (current_open_t > open_target)
-                        {
-                            // Prevent resizing from OpenFull to OpenSmall if window y position
-                            // is greater than OpenSmall's target
-                            open_target = 0;
-                            state = TerminalState.Close;
-                            return;
-                        }
-                        real_window_size = open_target;
-                        scroll_position.y = int.MaxValue;
-                        break;
+                        // Prevent resizing from OpenFull to OpenSmall if window y position
+                        // is greater than OpenSmall's target
+                        open_target = 0;
+                        state = TerminalState.Close;
+                        return;
                     }
-                case TerminalState.OpenFull:
+                    real_window_size = open_target;
+                    scroll_position.y = int.MaxValue;
+                    break;
+                }
+
+                // case TerminalState.OpenFull:
                 default:
-                    {
-                        real_window_size = Screen.height * _settings.MaxHeight;
-                        open_target = real_window_size;
-                        break;
-                    }
+                {
+                    real_window_size = Screen.height * _settings.MaxHeight;
+                    open_target = real_window_size;
+                    break;
+                }
             }
 
             state = new_state;
@@ -135,12 +136,10 @@ namespace CommandTerminal
             if (Event.current.Equals(Event.KeyboardEvent(_settings.ToggleHotkey)))
             {
                 SetState(TerminalState.OpenSmall);
-                initial_open = true;
             }
             else if (Event.current.Equals(Event.KeyboardEvent(_settings.ToggleFullHotkey)))
             {
                 SetState(TerminalState.OpenFull);
-                initial_open = true;
             }
 
             if (_settings.ShowGUIButtons)
