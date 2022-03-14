@@ -13,7 +13,7 @@ namespace CommandTerminal
     
     public class Terminal : MonoBehaviour
     {
-        private TerminalSettings _settings;
+        [SerializeField] private TerminalSettings _settings;
         
         TerminalState state;
         bool input_fix;
@@ -97,7 +97,6 @@ namespace CommandTerminal
 
         void OnEnable()
         {
-            _settings = TerminalSettings.instance;
             Logger = new CommandLogger(_settings.BufferSize);
             Shell = new CommandShell(this);
             History = new CommandHistory();
