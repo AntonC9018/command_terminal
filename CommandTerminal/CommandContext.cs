@@ -61,7 +61,7 @@ namespace CommandTerminal
         /// </summary>
         public static bool TreatWarningsAsErrors
         {
-            get => MessageTypesConsideredError.HasFlag(LogTypes.Warning);
+            get => MessageTypesConsideredError.Has(LogTypes.Warning);
             set => MessageTypesConsideredError.Set(LogTypes.Warning, value);
         }
         private static LogTypes MessageTypesConsideredError = LogTypes.Warning | LogTypes.Error;
@@ -70,7 +70,7 @@ namespace CommandTerminal
         /// Indicates whether an error has been logged via the context since the last time
         /// it had been reset.
         /// </summary>
-        public bool HasErrors => _recordedMessageTypes.HasEitherFlag(MessageTypesConsideredError);
+        public bool HasErrors => _recordedMessageTypes.HasEither(MessageTypesConsideredError);
 
         public CommandContext(Terminal terminal)
         {
